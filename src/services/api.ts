@@ -149,6 +149,14 @@ export interface SubscriptionPlan {
 }
 
 /**
+ * Réponse de GET /subscription/plans (public).
+ */
+export interface AvailablePlansResponse {
+    plans: SubscriptionPlan[];
+    stripe_enabled: boolean;
+}
+
+/**
  * Interface pour l'abonnement avec les plans
  */
 export interface CompanyMember {
@@ -600,13 +608,25 @@ export const subscriptionService = {
         };
     },
 
-    async getPlans(): Promise<SubscriptionPlan[]> {
+    async getPlans(): Promise<AvailablePlansResponse> {
         const response = await fetch(`${API_URL}/api/subscription/plans`);
         if (!response.ok) {
             throw new Error('Erreur lors de la récupération des plans');
         }
-        const plans = await response.json() as SubscriptionPlan[];
-        return plans.map(normalizeSubscriptionPlan);
+        const data = (await response.json()) as {
+            plans?: SubscriptionPlan[];
+            stripe_enabled?: boolean;
+        };
+        const rawPlans = Array.isArray(data) ? data : data.plans;
+        const plans = (rawPlans ?? []).map(normalizeSubscriptionPlan);
+        const stripe_enabled =
+            typeof data === 'object' &&
+            data !== null &&
+            !Array.isArray(data) &&
+            typeof data.stripe_enabled === 'boolean'
+                ? data.stripe_enabled
+                : true;
+        return { plans, stripe_enabled };
     },
 
     async changePlan(planSlug: string, billingPeriod?: 'monthly' | 'yearly') {

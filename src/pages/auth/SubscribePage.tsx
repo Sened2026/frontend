@@ -119,7 +119,7 @@ export function SubscribePage() {
 
     useEffect(() => {
         subscriptionService.getPlans()
-            .then((loadedPlans) => {
+            .then(({ plans: loadedPlans }) => {
                 setPlans(loadedPlans);
 
                 // If arriving from Register with a clientSecret, find the matching plan

@@ -128,7 +128,7 @@ export function HomePage() {
 
     useEffect(() => {
         subscriptionService.getPlans()
-            .then(setPlans)
+            .then(({ plans }) => setPlans(plans))
             .catch((err) => console.error("Erreur chargement plans:", err));
     }, []);
 

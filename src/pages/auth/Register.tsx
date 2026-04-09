@@ -193,6 +193,8 @@ export function Register() {
     const [inviteData, setInviteData] =
         useState<InviteValidationResponse | null>(null);
     const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+    /** Aligné sur l’API : si true, Stripe est actif → pas de contournement paiement. */
+    const [stripeEnabled, setStripeEnabled] = useState(true);
     const [loadingPlans, setLoadingPlans] = useState(true);
     const [accountCreated, setAccountCreated] = useState(false);
     const [paymentRegistrationSessionId, setPaymentRegistrationSessionId] = useState<string | null>(null);
@@ -410,10 +412,13 @@ export function Register() {
 
     const loadPlans = async () => {
         try {
-            const data = await subscriptionService.getPlans();
-            setPlans(data);
+            const { plans: loadedPlans, stripe_enabled } =
+                await subscriptionService.getPlans();
+            setPlans(loadedPlans);
+            setStripeEnabled(stripe_enabled);
         } catch {
-            // Fallback to hardcoded plans if API is unavailable
+            // Fallback to hardcoded plans if API is unavailable — ne pas exposer le bypass
+            setStripeEnabled(true);
             setPlans([
                 {
                     id: "essentiel",
@@ -2032,15 +2037,17 @@ export function Register() {
                                     </Button>
                                 )}
                             </div>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={handleSkipPayment}
-                                disabled={isSubmitting}
-                                className="w-full"
-                            >
-                                Passer le paiement (temporaire)
-                            </Button>
+                            {!stripeEnabled && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={handleSkipPayment}
+                                    disabled={isSubmitting}
+                                    className="w-full"
+                                >
+                                    Passer le paiement (temporaire)
+                                </Button>
+                            )}
                         </div>
                     )}
 
