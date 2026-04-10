@@ -145,148 +145,169 @@ export function HomePage() {
             <PublicNavbar />
 
             <main className="flex-1">
-                {/* Hero — 2 colonnes */}
+                {/* Hero — centré (logo + CTA) */}
                 <section className="relative py-20 md:py-32">
                     <div className="container mx-auto px-4">
-                        <div className="grid md:grid-cols-2 gap-12 items-center">
-                            {/* Gauche */}
-                            <div>
-                                <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
-                                    TPE/PME/Professionnels
-                                </p>
-                                <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-                                    L'outil qui réunit vos{" "}
-                                    <span className="text-primary">
-                                        finances
-                                    </span>
-                                    , votre{" "}
-                                    <span className="text-primary">
-                                        comptabilité
-                                    </span>{" "}
-                                    et votre{" "}
-                                    <span className="text-primary">
-                                        compte pro
-                                    </span>
-                                </h1>
-                                <div className="mt-8">
-                                    <Link to="/auth/register">
-                                        <Button
-                                            size="lg"
-                                            className="rounded-full"
-                                        >
-                                            Démarrer maintenant
-                                            <ArrowRight className="ml-2 h-4 w-4" />
-                                        </Button>
-                                    </Link>
-                                </div>
-                                {/* Badges notation — Google & Trustpilot */}
-                                <div className="mt-8 inline-flex flex-col gap-3 rounded-xl bg-muted/60 px-5 py-4">
-                                    {/* Google */}
-                                    <div className="flex items-center gap-3">
-                                        <span
-                                            className="text-xl font-bold text-foreground leading-none"
-                                            style={{
-                                                fontFamily:
-                                                    "'Google Sans', 'Product Sans', sans-serif",
-                                            }}
-                                        >
-                                            G
-                                        </span>
-                                        <span className="text-sm font-semibold text-foreground">
-                                            4.7/5
-                                        </span>
-                                        <div className="flex items-center gap-0.5">
-                                            {[1, 2, 3, 4].map((i) => (
-                                                <Star
-                                                    key={i}
-                                                    className="h-4 w-4 fill-yellow-400 text-yellow-400"
-                                                />
-                                            ))}
-                                            <svg
-                                                className="h-4 w-4"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <defs>
-                                                    <linearGradient id="half-yellow">
-                                                        <stop
-                                                            offset="50%"
-                                                            stopColor="#facc15"
-                                                        />
-                                                        <stop
-                                                            offset="50%"
-                                                            stopColor="transparent"
-                                                        />
-                                                    </linearGradient>
-                                                </defs>
-                                                <path
-                                                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                                                    fill="url(#half-yellow)"
-                                                    stroke="#facc15"
-                                                    strokeWidth="1"
-                                                />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    {/* Trustpilot */}
-                                    <div className="flex items-center gap-3">
-                                        <svg
-                                            className="h-5 w-5"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                        >
-                                            <path
-                                                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                                                fill="#00b67a"
-                                            />
-                                        </svg>
-                                        <span className="text-sm font-semibold text-foreground">
-                                            4.5/5
-                                        </span>
-                                        <div className="flex items-center gap-0.5">
-                                            {[1, 2, 3, 4].map((i) => (
-                                                <Star
-                                                    key={i}
-                                                    className="h-4 w-4 fill-emerald-500 text-emerald-500"
-                                                />
-                                            ))}
-                                            <svg
-                                                className="h-4 w-4"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <defs>
-                                                    <linearGradient id="half-green">
-                                                        <stop
-                                                            offset="50%"
-                                                            stopColor="#10b981"
-                                                        />
-                                                        <stop
-                                                            offset="50%"
-                                                            stopColor="transparent"
-                                                        />
-                                                    </linearGradient>
-                                                </defs>
-                                                <path
-                                                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                                                    fill="url(#half-green)"
-                                                    stroke="#10b981"
-                                                    strokeWidth="1"
-                                                />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Droite — logo principal */}
-                            <div className="hidden md:flex relative w-full max-w-lg ml-auto min-h-[280px] md:min-h-[360px] items-center justify-center">
+                        <div className="flex flex-col items-center text-center">
+                            <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+                                TPE/PME/Professionnels
+                            </p>
+                            <div className="relative flex w-full max-w-lg min-h-[280px] md:min-h-[360px] items-center justify-center">
                                 <img
                                     src="/brand/principal/SVG/PRINCIPAL_bleu.svg"
                                     alt="Sened"
-                                    className="w-full max-w-md h-auto object-contain"
+                                    className="h-auto w-full max-w-md object-contain"
                                 />
                             </div>
+                            <div className="mt-8">
+                                <Link to="/auth/register">
+                                    <Button
+                                        size="lg"
+                                        className="rounded-full"
+                                    >
+                                        Démarrer maintenant
+                                        <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </Link>
+                            </div>
+                        </div>
 
-                            {/*
+                        {/* Ancienne mise en page — 2 colonnes (désactivée, conservée pour référence) */}
+                        {false && (
+                            <div className="grid md:grid-cols-2 gap-12 items-center">
+                                <div>
+                                    <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+                                        TPE/PME/Professionnels
+                                    </p>
+                                    <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
+                                        L'outil qui réunit vos{" "}
+                                        <span className="text-primary">
+                                            finances
+                                        </span>
+                                        , votre{" "}
+                                        <span className="text-primary">
+                                            comptabilité
+                                        </span>{" "}
+                                        et votre{" "}
+                                        <span className="text-primary">
+                                            compte pro
+                                        </span>
+                                    </h1>
+                                    <div className="mt-8">
+                                        <Link to="/auth/register">
+                                            <Button
+                                                size="lg"
+                                                className="rounded-full"
+                                            >
+                                                Démarrer maintenant
+                                                <ArrowRight className="ml-2 h-4 w-4" />
+                                            </Button>
+                                        </Link>
+                                    </div>
+                                    <div className="mt-8 inline-flex flex-col gap-3 rounded-xl bg-muted/60 px-5 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <span
+                                                className="text-xl font-bold text-foreground leading-none"
+                                                style={{
+                                                    fontFamily:
+                                                        "'Google Sans', 'Product Sans', sans-serif",
+                                                }}
+                                            >
+                                                G
+                                            </span>
+                                            <span className="text-sm font-semibold text-foreground">
+                                                4.7/5
+                                            </span>
+                                            <div className="flex items-center gap-0.5">
+                                                {[1, 2, 3, 4].map((i) => (
+                                                    <Star
+                                                        key={i}
+                                                        className="h-4 w-4 fill-yellow-400 text-yellow-400"
+                                                    />
+                                                ))}
+                                                <svg
+                                                    className="h-4 w-4"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <defs>
+                                                        <linearGradient id="half-yellow">
+                                                            <stop
+                                                                offset="50%"
+                                                                stopColor="#facc15"
+                                                            />
+                                                            <stop
+                                                                offset="50%"
+                                                                stopColor="transparent"
+                                                            />
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <path
+                                                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                                                        fill="url(#half-yellow)"
+                                                        stroke="#facc15"
+                                                        strokeWidth="1"
+                                                    />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <svg
+                                                className="h-5 w-5"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                            >
+                                                <path
+                                                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                                                    fill="#00b67a"
+                                                />
+                                            </svg>
+                                            <span className="text-sm font-semibold text-foreground">
+                                                4.5/5
+                                            </span>
+                                            <div className="flex items-center gap-0.5">
+                                                {[1, 2, 3, 4].map((i) => (
+                                                    <Star
+                                                        key={i}
+                                                        className="h-4 w-4 fill-emerald-500 text-emerald-500"
+                                                    />
+                                                ))}
+                                                <svg
+                                                    className="h-4 w-4"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <defs>
+                                                        <linearGradient id="half-green">
+                                                            <stop
+                                                                offset="50%"
+                                                                stopColor="#10b981"
+                                                            />
+                                                            <stop
+                                                                offset="50%"
+                                                                stopColor="transparent"
+                                                            />
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <path
+                                                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                                                        fill="url(#half-green)"
+                                                        stroke="#10b981"
+                                                        strokeWidth="1"
+                                                    />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="hidden md:flex relative w-full max-w-lg ml-auto min-h-[280px] md:min-h-[360px] items-center justify-center">
+                                    <img
+                                        src="/brand/principal/SVG/PRINCIPAL_bleu.svg"
+                                        alt="Sened"
+                                        className="w-full max-w-md h-auto object-contain"
+                                    />
+                                </div>
+
+                                {/*
                             Droite — Bento visuel (désactivé)
                             <div
                                 className="hidden md:block relative w-full max-w-lg ml-auto"
@@ -351,7 +372,8 @@ export function HomePage() {
                                 </div>
                             </div>
                             */}
-                        </div>
+                            </div>
+                        )}
                     </div>
                 </section>
 
