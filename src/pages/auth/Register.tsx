@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,7 @@ import {
     inviteService,
     type SubscriptionPlan,
     type InviteValidationResponse,
+    type RegistrationPricing,
 } from "@/services/api";
 import { EnterpriseLookupField } from "@/components/shared/EnterpriseLookupField";
 import {
@@ -51,6 +52,8 @@ import {
     Calculator,
     ArrowLeft,
     Shield,
+    TicketPercent,
+    X,
 } from "lucide-react";
 import type { CompanyRole, SirenSearchResult } from "@/types";
 
@@ -205,6 +208,13 @@ export function Register() {
     const [isFinalizingPaidRegistration, setIsFinalizingPaidRegistration] = useState(false);
     const [legalConsentAccepted, setLegalConsentAccepted] = useState(false);
     const [legalConsentError, setLegalConsentError] = useState<string | null>(null);
+    const [showPromoField, setShowPromoField] = useState(false);
+    const [promoCode, setPromoCode] = useState("");
+    const [promoValidation, setPromoValidation] =
+        useState<RegistrationPricing | null>(null);
+    const [promoError, setPromoError] = useState<string | null>(null);
+    const [isApplyingPromo, setIsApplyingPromo] = useState(false);
+    const hasInitializedPromoReset = useRef(false);
 
     const [formData, setFormData] = useState<FormData>({
         ...((import.meta.env.DEV
@@ -241,6 +251,8 @@ export function Register() {
     const isMemberInvite = isFromInvite && inviteData?.invitation_type === "member";
     const isAccountantFirmInvite =
         isFromInvite && inviteData?.invitation_type === "accountant_firm";
+    const isMerchantSignupInvite =
+        isFromInvite && inviteData?.invitation_type === "merchant_signup";
     const isCompanyOwnerRole = COMPANY_OWNER_ROLES.includes(selectedRole);
     const canChooseCompanyCreationMode =
         (selectedRole === "accountant" && !isAccountantFirmInvite) ||
@@ -300,7 +312,9 @@ export function Register() {
 
     useEffect(() => {
         if (selectedRole === "merchant_admin") {
-            setCompanyCreationMode(isMemberInvite ? "join_only" : "create");
+            setCompanyCreationMode(
+                isMerchantSignupInvite ? "create" : isMemberInvite ? "join_only" : "create",
+            );
             return;
         }
 
@@ -315,7 +329,7 @@ export function Register() {
         }
 
         setCompanyCreationMode("join_only");
-    }, [selectedRole, isMemberInvite, isAccountantFirmInvite]);
+    }, [selectedRole, isMemberInvite, isAccountantFirmInvite, isMerchantSignupInvite]);
 
     useEffect(() => {
         if (searchParams.get("cancelled") === "true") {
@@ -407,6 +421,24 @@ export function Register() {
             ...prev,
             company_name: inviteData.invited_firm_name || prev.company_name,
             siren: inviteData.invited_firm_siren || prev.siren,
+        }));
+    }, [inviteData]);
+
+    useEffect(() => {
+        if (!inviteData || inviteData.invitation_type !== "merchant_signup") {
+            return;
+        }
+
+        setSelectedCompanyName(inviteData.signup_company_name || undefined);
+        setSelectedCompanySiret(inviteData.signup_siret || undefined);
+        setRegistrationConflictSupportEmail(null);
+        setFormData((prev) => ({
+            ...prev,
+            company_name: inviteData.signup_company_name || prev.company_name,
+            siren: inviteData.signup_siren || prev.siren,
+            address: inviteData.signup_address || prev.address,
+            postal_code: inviteData.signup_postal_code || prev.postal_code,
+            city: inviteData.signup_city || prev.city,
         }));
     }, [inviteData]);
 
@@ -549,13 +581,32 @@ export function Register() {
         setAccountantDisplayName(undefined);
     };
 
+    const resetPreparedPaymentState = () => {
+        setPaymentRegistrationSessionId(null);
+        setPaymentClientSecret(null);
+        setPaymentInitError(null);
+        setPaymentStatusMessage(null);
+    };
+
     const selectedPlanData = plans.find((p) => p.slug === selectedPlan) || null;
     const selectedPriceHt = selectedPlanData
         ? billingPeriod === "yearly"
             ? selectedPlanData.price_yearly
             : selectedPlanData.price_monthly
         : 0;
-    const selectedPriceTtc = selectedPriceHt * 1.2;
+    const basePricing: RegistrationPricing = {
+        original_amount_ht: selectedPriceHt,
+        discount_amount_ht: 0,
+        final_amount_ht: selectedPriceHt,
+        currency: "EUR",
+        promotion_code: null,
+        coupon_name: null,
+        coupon_percent_off: null,
+        coupon_amount_off: null,
+    };
+    const displayedPricing = promoValidation ?? basePricing;
+    const displayedPriceTtc = displayedPricing.final_amount_ht * 1.2;
+    const displayedOriginalPriceTtc = displayedPricing.original_amount_ht * 1.2;
     const paymentPrefill: PaymentFormBillingDetails = {
         email: formData.email,
         name: formData.company_name,
@@ -619,6 +670,19 @@ export function Register() {
         selectedRole === "accountant"
             ? "Cabinet Dupont Expertise"
             : "Ma Société SARL";
+
+    useEffect(() => {
+        if (!hasInitializedPromoReset.current) {
+            hasInitializedPromoReset.current = true;
+            return;
+        }
+
+        setPromoCode("");
+        setPromoValidation(null);
+        setPromoError(null);
+        setShowPromoField(false);
+        resetPreparedPaymentState();
+    }, [selectedPlan, billingPeriod]);
 
     const validateStep1 = (): boolean => {
         const newErrors: Partial<Record<keyof FormData, string>> = {};
@@ -818,6 +882,57 @@ export function Register() {
         }
     };
 
+    const handlePromoCodeChange = (value: string) => {
+        setPromoCode(value);
+        setPromoError(null);
+
+        if (
+            promoValidation?.promotion_code &&
+            promoValidation.promotion_code.toLowerCase() !== value.trim().toLowerCase()
+        ) {
+            setPromoValidation(null);
+            resetPreparedPaymentState();
+        }
+    };
+
+    const handleApplyPromoCode = async () => {
+        const normalizedPromoCode = promoCode.trim();
+        if (!normalizedPromoCode) {
+            setPromoError("Saisissez un code promo.");
+            setPromoValidation(null);
+            return;
+        }
+
+        setIsApplyingPromo(true);
+        setPromoError(null);
+
+        try {
+            const result = await subscriptionService.validateRegistrationPromotion({
+                plan_slug: selectedPlan,
+                billing_period: billingPeriod,
+                promotion_code: normalizedPromoCode,
+            });
+
+            setPromoCode(result.pricing.promotion_code || normalizedPromoCode);
+            setPromoValidation(result.pricing);
+            resetPreparedPaymentState();
+        } catch (error: any) {
+            setPromoValidation(null);
+            setPromoError(
+                error.message || "Ce code promo n'a pas pu être appliqué.",
+            );
+        } finally {
+            setIsApplyingPromo(false);
+        }
+    };
+
+    const handleRemovePromoCode = () => {
+        setPromoCode("");
+        setPromoValidation(null);
+        setPromoError(null);
+        resetPreparedPaymentState();
+    };
+
     const handleStripeCheckout = async () => {
         setIsPreparingPayment(true);
         setPaymentClientSecret(null);
@@ -860,10 +975,14 @@ export function Register() {
                             : undefined,
                     plan_slug: selectedPlan,
                     billing_period: billingPeriod,
+                    promotion_code: promoValidation?.promotion_code || undefined,
                     platform_legal_accepted_at: platformLegalAcceptedAt,
                 });
 
             setPaymentRegistrationSessionId(result.registration_session_id);
+            setPromoValidation(
+                result.pricing.promotion_code ? result.pricing : null,
+            );
 
             if (result.status === 'active') {
                 const finalizeResult = await subscriptionService.finalizeRegistrationPayment(
@@ -888,6 +1007,10 @@ export function Register() {
             const description =
                 error.message ||
                 "Impossible de créer l'abonnement.";
+            if (description.toLowerCase().includes("code promo")) {
+                setPromoValidation(null);
+                setPromoError(description);
+            }
             setPaymentInitError(description);
             toast({
                 title: "Erreur de paiement",
@@ -992,12 +1115,11 @@ export function Register() {
                         to="/"
                         className="mx-auto mb-4 flex items-center gap-2"
                     >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
-                            <span className="text-lg font-bold text-primary-foreground">
-                                S
-                            </span>
-                        </div>
-                        <span className="text-xl font-bold">SENED</span>
+                        <img
+                            src="/brand/secondaire/SVG/SECONDAIRE_bleu.svg"
+                            alt="Sened"
+                            className="h-8 w-auto"
+                        />
                     </Link>
                     <CardTitle className="text-2xl font-bold">
                         Créer un compte
@@ -1034,9 +1156,15 @@ export function Register() {
                                                 Invitation détectée
                                             </p>
                                             <p className="text-muted-foreground">
-                                                {inviteData.inviter_name} vous
-                                                invite à rejoindre{" "}
-                                                {inviteData.company_name}.
+                                                {isMerchantSignupInvite
+                                                    ? `${inviteData.inviter_name} vous invite à créer votre entreprise puis à la lier au cabinet ${inviteData.company_name}.`
+                                                    : (
+                                                        <>
+                                                            {inviteData.inviter_name} vous
+                                                            invite à rejoindre{" "}
+                                                            {inviteData.company_name}.
+                                                        </>
+                                                    )}
                                             </p>
                                             {isAccountantFirmInvite && (
                                                 <p className="mt-2 text-muted-foreground">
@@ -1045,6 +1173,11 @@ export function Register() {
                                                     l&apos;invitation, sans
                                                     abonnement personnel à
                                                     configurer.
+                                                </p>
+                                            )}
+                                            {isMerchantSignupInvite && (
+                                                <p className="mt-2 text-muted-foreground">
+                                                    Les informations de votre entreprise sont préremplies à partir de l’invitation. Vous pouvez les ajuster avant de créer votre compte et de configurer l’abonnement.
                                                 </p>
                                             )}
                                             {isMemberInvite && isJoinOnlyMode && (
@@ -1886,8 +2019,23 @@ export function Register() {
                                             </p>
                                         </div>
                                         <div className="text-right">
+                                            {displayedPricing.discount_amount_ht >
+                                            0 ? (
+                                                <p className="text-sm text-muted-foreground line-through">
+                                                    {formatPrice(
+                                                        displayedPricing.original_amount_ht,
+                                                    )}
+                                                    €{" "}
+                                                    {billingPeriod === "yearly"
+                                                        ? "HT/an"
+                                                        : "HT/mois"}
+                                                </p>
+                                            ) : null}
                                             <span className="text-3xl font-bold">
-                                                {formatPrice(selectedPriceHt)}€
+                                                {formatPrice(
+                                                    displayedPricing.final_amount_ht,
+                                                )}
+                                                €
                                             </span>
                                             <span className="text-sm text-muted-foreground">
                                                 {billingPeriod === "yearly"
@@ -1895,30 +2043,39 @@ export function Register() {
                                                     : " HT/mois"}
                                             </span>
                                             {billingPeriod === "yearly" &&
-                                                selectedPlanData.price_yearly >
+                                                displayedPricing.final_amount_ht >
                                                     0 && (
                                                     <p className="text-xs text-muted-foreground mt-0.5">
                                                         soit{" "}
                                                         {formatPrice(
-                                                            selectedPlanData.price_yearly /
+                                                            displayedPricing.final_amount_ht /
                                                                 12,
                                                         )}
                                                         € HT/mois
                                                     </p>
                                                 )}
-                                            {selectedPriceHt > 0 && (
+                                            {displayedPricing.final_amount_ht >
+                                                0 && (
                                                 <p className="text-xs text-muted-foreground mt-0.5">
                                                     {formatPrice(
-                                                        selectedPriceHt,
+                                                        displayedPricing.final_amount_ht,
                                                     )}
                                                     € HT, soit{" "}
                                                     {formatPrice(
-                                                        selectedPriceTtc,
+                                                        displayedPriceTtc,
                                                     )}
                                                     € TTC
                                                     {billingPeriod === "yearly"
                                                         ? "/an"
                                                         : "/mois"}
+                                                </p>
+                                            )}
+                                            {displayedPricing.discount_amount_ht >
+                                            0 && (
+                                                <p className="text-xs font-medium text-emerald-700 mt-1">
+                                                    Code{" "}
+                                                    {displayedPricing.promotion_code}
+                                                    {" "}appliqué
                                                 </p>
                                             )}
                                         </div>
@@ -1936,8 +2093,158 @@ export function Register() {
                                             </li>
                                         ))}
                                     </ul>
+                                    <div className="mt-4 rounded-lg border bg-background/80 p-4 space-y-2 text-sm">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-muted-foreground">
+                                                Prix initial
+                                            </span>
+                                            <span>
+                                                {formatPrice(
+                                                    displayedPricing.original_amount_ht,
+                                                )}
+                                                € HT
+                                            </span>
+                                        </div>
+                                        {displayedPricing.discount_amount_ht >
+                                            0 && (
+                                            <div className="flex items-center justify-between text-emerald-700">
+                                                <span>
+                                                    Remise{" "}
+                                                    {displayedPricing.coupon_name ||
+                                                        displayedPricing.promotion_code}
+                                                </span>
+                                                <span>
+                                                    -
+                                                    {formatPrice(
+                                                        displayedPricing.discount_amount_ht,
+                                                    )}
+                                                    € HT
+                                                </span>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center justify-between font-medium pt-2 border-t">
+                                            <span>Total</span>
+                                            <span>
+                                                {formatPrice(
+                                                    displayedPricing.final_amount_ht,
+                                                )}
+                                                € HT
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                            <span>Total TTC estimé</span>
+                                            <span>
+                                                {formatPrice(displayedPriceTtc)}
+                                                € TTC
+                                            </span>
+                                        </div>
+                                        {displayedPricing.discount_amount_ht >
+                                            0 && (
+                                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                                <span>Prix TTC initial</span>
+                                                <span>
+                                                    {formatPrice(
+                                                        displayedOriginalPriceTtc,
+                                                    )}
+                                                    € TTC
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
+
+                            <div className="rounded-lg border bg-background">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setShowPromoField(!showPromoField)
+                                    }
+                                    className="flex w-full items-center justify-between px-4 py-3 text-left"
+                                >
+                                    <span className="flex items-center gap-2 font-medium">
+                                        <TicketPercent className="h-4 w-4 text-primary" />
+                                        J’ai un code promo
+                                    </span>
+                                    <span className="text-sm text-muted-foreground">
+                                        {showPromoField
+                                            ? "Masquer"
+                                            : promoValidation?.promotion_code
+                                              ? "Modifier"
+                                              : "Ajouter"}
+                                    </span>
+                                </button>
+
+                                {showPromoField && (
+                                    <div className="border-t px-4 py-4 space-y-3">
+                                        <div className="flex gap-2">
+                                            <Input
+                                                value={promoCode}
+                                                onChange={(e) =>
+                                                    handlePromoCodeChange(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="Ex: BIENVENUE20"
+                                                autoCapitalize="characters"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    void handleApplyPromoCode();
+                                                }}
+                                                disabled={
+                                                    isApplyingPromo ||
+                                                    !promoCode.trim()
+                                                }
+                                            >
+                                                {isApplyingPromo ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    "Appliquer"
+                                                )}
+                                            </Button>
+                                        </div>
+
+                                        {promoValidation?.promotion_code && (
+                                            <div className="flex items-center justify-between rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                                                <div>
+                                                    <p className="font-medium">
+                                                        Code{" "}
+                                                        {
+                                                            promoValidation.promotion_code
+                                                        }{" "}
+                                                        appliqué
+                                                    </p>
+                                                    <p className="text-xs text-emerald-700">
+                                                        Remise de{" "}
+                                                        {formatPrice(
+                                                            promoValidation.discount_amount_ht,
+                                                        )}
+                                                        € HT
+                                                    </p>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={handleRemovePromoCode}
+                                                    className="h-8 px-2 text-emerald-700 hover:text-emerald-800"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        )}
+
+                                        {promoError && (
+                                            <p className="text-sm text-destructive">
+                                                {promoError}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
 
                             <div className="rounded-lg border bg-muted/30 p-4 flex items-start gap-3">
                                 <AlertCircle className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
@@ -2015,10 +2322,7 @@ export function Register() {
                                     type="button"
                                     variant="outline"
                                     onClick={() => {
-                                        setPaymentRegistrationSessionId(null);
-                                        setPaymentClientSecret(null);
-                                        setPaymentInitError(null);
-                                        setPaymentStatusMessage(null);
+                                        resetPreparedPaymentState();
                                         setCurrentStep(2);
                                     }}
                                     className="flex-1"

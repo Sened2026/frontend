@@ -185,6 +185,17 @@ export interface InviteLinkedClientMerchantAdminData {
 
 export type LinkedClientMerchantAdminInvitation = CompanyInvitation;
 
+export interface MerchantSignupInvitation {
+  id: string;
+  email: string;
+  role: string;
+  created_at: string;
+  expires_at: string;
+  company_name: string | null;
+  siren: string | null;
+  city: string | null;
+}
+
 export interface InviteNewMerchantAdminData {
   email: string;
   company_name: string;
@@ -203,7 +214,6 @@ export type InviteNewMerchantAdminResponse =
     }
   | {
       status: "invited";
-      client_company_id: string;
       invitation_id: string;
       email: string;
     };
@@ -222,13 +232,20 @@ export interface InviteValidationResponse {
     | "accountant"
     | "accountant_consultant"
     | "superadmin";
-  invitation_type: "member" | "accountant_firm";
+  invitation_type: "member" | "accountant_firm" | "merchant_signup";
   company_id: string;
   company_name: string;
   inviter_name: string;
   expires_at: string;
   invited_firm_name?: string | null;
   invited_firm_siren?: string | null;
+  signup_company_name?: string | null;
+  signup_siren?: string | null;
+  signup_siret?: string | null;
+  signup_address?: string | null;
+  signup_postal_code?: string | null;
+  signup_city?: string | null;
+  signup_country?: string | null;
 }
 
 export interface InviteAccountantFirmData {
@@ -330,7 +347,19 @@ export interface RegistrationPaymentPayload {
   accountant_siren?: string;
   plan_slug: string;
   billing_period: "monthly" | "yearly";
+  promotion_code?: string;
   platform_legal_accepted_at: string;
+}
+
+export interface RegistrationPricing {
+  original_amount_ht: number;
+  discount_amount_ht: number;
+  final_amount_ht: number;
+  currency: string;
+  promotion_code: string | null;
+  coupon_name: string | null;
+  coupon_percent_off: number | null;
+  coupon_amount_off: number | null;
 }
 
 export interface RegistrationPaymentResponse {
@@ -338,6 +367,17 @@ export interface RegistrationPaymentResponse {
   subscription_id: string;
   client_secret: string;
   status: string;
+  pricing: RegistrationPricing;
+}
+
+export interface ValidateRegistrationPromotionPayload {
+  plan_slug: string;
+  billing_period: "monthly" | "yearly";
+  promotion_code: string;
+}
+
+export interface ValidateRegistrationPromotionResponse {
+  pricing: RegistrationPricing;
 }
 
 export interface FinalizeRegistrationPaymentResponse {
@@ -722,6 +762,15 @@ export const subscriptionService = {
     payload: RegistrationPaymentPayload,
   ): Promise<RegistrationPaymentResponse> {
     return fetchWithoutAuth("/subscription/registration", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async validateRegistrationPromotion(
+    payload: ValidateRegistrationPromotionPayload,
+  ): Promise<ValidateRegistrationPromotionResponse> {
+    return fetchWithoutAuth("/subscription/registration/promo/validate", {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -1164,6 +1213,24 @@ export const companyService = {
       method: "POST",
       body: JSON.stringify(data),
     });
+  },
+
+  async getMerchantSignupInvitations(
+    companyId: string,
+  ): Promise<MerchantSignupInvitation[]> {
+    return fetchWithAuth(`/companies/${companyId}/merchant-signup-invitations`);
+  },
+
+  async cancelMerchantSignupInvitation(
+    companyId: string,
+    invitationId: string,
+  ): Promise<{ message: string }> {
+    return fetchWithAuth(
+      `/companies/${companyId}/merchant-signup-invitations/${invitationId}`,
+      {
+        method: "DELETE",
+      },
+    );
   },
 
   async getLinkedClientMerchantAdminInvitations(

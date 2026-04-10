@@ -107,10 +107,11 @@ export function Login() {
                         </Link>
                     </div>
                     <Link to="/" className="mx-auto mb-4 flex items-center gap-2">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
-                            <span className="text-lg font-bold text-primary-foreground">S</span>
-                        </div>
-                        <span className="text-xl font-bold">SENED</span>
+                        <img
+                            src="/brand/secondaire/SVG/SECONDAIRE_bleu.svg"
+                            alt="Sened"
+                            className="h-8 w-auto"
+                        />
                     </Link>
                     <CardTitle className="text-2xl font-bold">Connexion</CardTitle>
                     <CardDescription>

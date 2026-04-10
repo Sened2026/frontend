@@ -13,7 +13,7 @@
 
 @layer base {
   :root {
-    /* Light mode — SENED violet palette */
+    /* Light mode — SENED indigo palette */
     --background: 220 14% 96%;
     /* #F3F4F6 gris très clair */
     --foreground: 224 71% 4%;
@@ -25,21 +25,21 @@
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
 
-    --primary: 263 70% 50%;
-    /* #7C3AED violet */
-    --primary-foreground: 0 0% 100%;
-    /* blanc */
+    --primary: 235 66% 64%;
+    /* primary brand */
+    --primary-foreground: 224 71% 4%;
+    /* foreground sombre pour contraste AA */
 
-    --secondary: 263 70% 96%;
-    /* #EDE9FE violet très clair */
-    --secondary-foreground: 263 70% 40%;
+    --secondary: 235 66% 96%;
+    /* teinte primaire tres claire */
+    --secondary-foreground: 235 66% 34%;
 
     --muted: 220 14% 96%;
     --muted-foreground: 215 16% 47%;
     /* #6B7280 */
 
-    --accent: 263 70% 96%;
-    --accent-foreground: 263 70% 40%;
+    --accent: 235 66% 96%;
+    --accent-foreground: 235 66% 34%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -47,14 +47,14 @@
     --border: 220 13% 91%;
     /* #E5E7EB */
     --input: 220 13% 91%;
-    --ring: 263 70% 50%;
-    /* violet */
+    --ring: 235 66% 64%;
+    /* primary */
 
     --radius: 0.5rem;
   }
 
   .dark {
-    /* Dark mode — SENED violet palette */
+    /* Dark mode — SENED indigo palette */
     --background: 224 71% 4%;
     --foreground: 210 20% 98%;
 
@@ -64,24 +64,24 @@
     --popover: 217 33% 10%;
     --popover-foreground: 210 20% 98%;
 
-    --primary: 263 70% 58%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 235 66% 64%;
+    --primary-foreground: 224 71% 4%;
 
-    --secondary: 263 30% 20%;
-    --secondary-foreground: 263 70% 80%;
+    --secondary: 235 30% 20%;
+    --secondary-foreground: 235 66% 82%;
 
     --muted: 217 33% 15%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 263 30% 20%;
-    --accent-foreground: 263 70% 80%;
+    --accent: 235 30% 20%;
+    --accent-foreground: 235 66% 82%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 217 33% 20%;
     --input: 217 33% 20%;
-    --ring: 263 70% 58%;
+    --ring: 235 66% 64%;
   }
 }
 

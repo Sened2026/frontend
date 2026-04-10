@@ -18,10 +18,11 @@ export function PublicNavbar() {
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
                 <Link to="/" className="flex items-center gap-2">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary">
-                        <span className="text-lg font-bold text-primary-foreground">S</span>
-                    </div>
-                    <span className="text-xl font-bold">SENED</span>
+                    <img
+                        src="/brand/secondaire/SVG/SECONDAIRE_bleu.svg"
+                        alt="Sened"
+                        className="h-7 w-auto sm:h-8"
+                    />
                 </Link>
 
                 <nav className="hidden md:flex items-center gap-6">

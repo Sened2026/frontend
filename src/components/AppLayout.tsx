@@ -455,12 +455,11 @@ function AppLayoutContent() {
                         to="/dashboard"
                         className="flex h-16 items-center gap-3 border-b px-6 hover:bg-muted/50"
                     >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
-                            <span className="text-lg font-bold text-primary-foreground">
-                                S
-                            </span>
-                        </div>
-                        <span className="text-xl font-bold">SENED</span>
+                        <img
+                            src="/brand/secondaire/SVG/SECONDAIRE_bleu.svg"
+                            alt="Sened"
+                            className="h-8 w-auto"
+                        />
                     </Link>
 
                     {/* Navigation principale — sans headers de section */}

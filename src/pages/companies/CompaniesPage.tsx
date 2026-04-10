@@ -356,7 +356,7 @@ export function CompaniesPage() {
                                                             </Badge>
                                                         )}
                                                         {company.is_owner && (
-                                                            <Badge className="gap-1">
+                                                            <Badge className="gap-1 text-white">
                                                                 <Crown className="h-3 w-3" />
                                                                 Propriétaire
                                                             </Badge>
@@ -425,7 +425,10 @@ export function CompaniesPage() {
                                             </div>
                                         </div>
                                         <div className="mt-3 flex items-center justify-between border-t pt-3">
-                                            <Badge variant={company.role === 'merchant_admin' || company.role === 'accountant' ? 'default' : 'secondary'}>
+                                            <Badge
+                                                variant={company.role === 'merchant_admin' || company.role === 'accountant' ? 'default' : 'secondary'}
+                                                className={company.role === 'merchant_admin' || company.role === 'accountant' ? 'text-white' : undefined}
+                                            >
                                                 {getRoleLabel(company.role)}
                                             </Badge>
                                             {company.siren && (

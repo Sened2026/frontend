@@ -26,6 +26,7 @@ import {
     type AccountantLinkRequest,
     type AccountantLinkRequestCompanySummary,
     type LinkedClientWithStats,
+    type MerchantSignupInvitation,
 } from '@/services/api';
 import type { SirenSearchResult } from '@/types';
 
@@ -43,10 +44,12 @@ export function AccountantDashboard() {
     const [merchantResults, setMerchantResults] = useState<AccountantLinkRequestCompanySummary[]>([]);
     const [merchantSearchLoading, setMerchantSearchLoading] = useState(false);
     const [outgoingRequests, setOutgoingRequests] = useState<AccountantLinkRequest[]>([]);
+    const [merchantSignupInvitations, setMerchantSignupInvitations] = useState<MerchantSignupInvitation[]>([]);
     const [creatingRequestFor, setCreatingRequestFor] = useState<string | null>(null);
     const [selectedEnterprise, setSelectedEnterprise] = useState<SirenSearchResult | null>(null);
     const [inviteMerchantAdminEmail, setInviteMerchantAdminEmail] = useState('');
     const [invitingNewMerchant, setInvitingNewMerchant] = useState(false);
+    const [cancellingMerchantSignupInvitationId, setCancellingMerchantSignupInvitationId] = useState<string | null>(null);
 
     const cabinetCompany = useMemo(() => {
         if (currentCompany && ['accountant', 'accountant_consultant'].includes(currentCompany.role)) {
@@ -82,22 +85,27 @@ export function AccountantDashboard() {
 
             setLoading(true);
             try {
-                const [linkedClients, pendingRequests] = await Promise.all([
+                const [linkedClients, pendingRequests, pendingMerchantSignupInvitations] = await Promise.all([
                     companyService.getLinkedClients(cabinetCompany.id),
                     cabinetCompany.role === 'accountant'
                         ? companyService.getAccountantLinkRequests(cabinetCompany.id, 'outgoing')
                         : Promise.resolve([]),
+                    cabinetCompany.role === 'accountant'
+                        ? companyService.getMerchantSignupInvitations(cabinetCompany.id)
+                        : Promise.resolve([]),
                 ]);
                 setClients(linkedClients as LinkedClientWithStats[]);
                 setOutgoingRequests(pendingRequests as AccountantLinkRequest[]);
+                setMerchantSignupInvitations(pendingMerchantSignupInvitations as MerchantSignupInvitation[]);
             } catch (error) {
                 console.error('Error loading linked clients:', error);
                 setClients([]);
                 setOutgoingRequests([]);
+                setMerchantSignupInvitations([]);
                 toast({
                     variant: 'destructive',
                     title: 'Chargement impossible',
-                    description: 'Les dossiers clients et demandes de liaison n’ont pas pu être chargés.',
+                    description: 'Les dossiers clients, demandes de liaison et invitations marchandes n’ont pas pu être chargés.',
                 });
             } finally {
                 setLoading(false);
@@ -136,15 +144,19 @@ export function AccountantDashboard() {
     const refreshDashboardData = async () => {
         if (!cabinetCompany) return;
 
-        const [linkedClients, pendingRequests] = await Promise.all([
+        const [linkedClients, pendingRequests, pendingMerchantSignupInvitations] = await Promise.all([
             companyService.getLinkedClients(cabinetCompany.id),
             cabinetCompany.role === 'accountant'
                 ? companyService.getAccountantLinkRequests(cabinetCompany.id, 'outgoing')
+                : Promise.resolve([]),
+            cabinetCompany.role === 'accountant'
+                ? companyService.getMerchantSignupInvitations(cabinetCompany.id)
                 : Promise.resolve([]),
         ]);
 
         setClients(linkedClients as LinkedClientWithStats[]);
         setOutgoingRequests(pendingRequests as AccountantLinkRequest[]);
+        setMerchantSignupInvitations(pendingMerchantSignupInvitations as MerchantSignupInvitation[]);
     };
 
     const resetRequestDialogState = () => {
@@ -237,7 +249,7 @@ export function AccountantDashboard() {
             await refreshDashboardData();
             toast({
                 title: 'Invitation envoyée',
-                description: 'Le futur administrateur marchand recevra un email pour créer son compte et rejoindre le dossier client.',
+                description: 'Le futur administrateur marchand recevra un email pour créer son entreprise puis la lier automatiquement à votre cabinet.',
             });
             handleRequestDialogOpenChange(false);
         } catch (error: any) {
@@ -248,6 +260,32 @@ export function AccountantDashboard() {
             });
         } finally {
             setInvitingNewMerchant(false);
+        }
+    };
+
+    const handleCancelMerchantSignupInvitation = async (invitationId: string) => {
+        if (!cabinetCompany || cabinetCompany.role !== 'accountant') {
+            return;
+        }
+
+        try {
+            setCancellingMerchantSignupInvitationId(invitationId);
+            await companyService.cancelMerchantSignupInvitation(cabinetCompany.id, invitationId);
+            setMerchantSignupInvitations((previous) =>
+                previous.filter((invitation) => invitation.id !== invitationId),
+            );
+            toast({
+                title: 'Invitation annulée',
+                description: 'L’invitation marchand a été supprimée.',
+            });
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Annulation impossible',
+                description: error.message || 'L’invitation marchand n’a pas pu être annulée.',
+            });
+        } finally {
+            setCancellingMerchantSignupInvitationId(null);
         }
     };
 
@@ -322,6 +360,47 @@ export function AccountantDashboard() {
                                         <Badge variant="outline">Nouveau client</Badge>
                                     )}
                                     <Badge variant="secondary">En attente du marchand</Badge>
+                                </div>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+            )}
+            {merchantSignupInvitations.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Invitations marchand en attente</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {merchantSignupInvitations.map((invitation) => (
+                            <div
+                                key={invitation.id}
+                                className="flex flex-col gap-3 rounded-lg border p-4 md:flex-row md:items-center md:justify-between"
+                            >
+                                <div className="space-y-1">
+                                    <p className="font-medium">
+                                        {invitation.company_name || 'Entreprise à créer'}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {[invitation.siren ? `SIREN : ${invitation.siren}` : null, invitation.city, invitation.email].filter(Boolean).join(' • ') || 'Informations partielles'}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Envoyée le {new Date(invitation.created_at).toLocaleDateString('fr-FR')}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Badge variant="outline">Création de compte</Badge>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => void handleCancelMerchantSignupInvitation(invitation.id)}
+                                        disabled={cancellingMerchantSignupInvitationId === invitation.id}
+                                    >
+                                        {cancellingMerchantSignupInvitationId === invitation.id ? (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ) : null}
+                                        Annuler
+                                    </Button>
                                 </div>
                             </div>
                         ))}

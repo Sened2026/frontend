@@ -283,17 +283,12 @@ export function HomePage() {
                                 style={{ minHeight: "480px" }}
                             >
                                 {/* Carte SENED — top left */}
-                                <div className="absolute top-0 left-0 w-56 rounded-2xl bg-white dark:bg-card border border-border/60 shadow-lg p-4 z-10">
-                                    <div className="flex items-center gap-2.5 mb-2">
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">
-                                            <span className="text-sm font-bold text-primary-foreground">
-                                                S
-                                            </span>
-                                        </div>
-                                        <span className="font-semibold text-foreground text-sm">
-                                            SENED
-                                        </span>
-                                    </div>
+                                <div className="absolute top-0 left-0 w-64 rounded-2xl bg-white dark:bg-card border border-border/60 shadow-lg p-5 z-10">
+                                    <img
+                                        src="/brand/principal/SVG/PRINCIPAL_bleu.svg"
+                                        alt="Sened"
+                                        className="mb-3 h-12 w-auto"
+                                    />
                                     <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                                         +2 450 € ce mois-ci
                                     </p>

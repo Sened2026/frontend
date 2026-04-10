@@ -104,6 +104,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
             updateUserState(newSession, event);
             void loadAuthCapabilities(newSession);
             setLoading(false);
+
+            if (
+                event === 'PASSWORD_RECOVERY'
+                && window.location.pathname !== '/auth/reset-password'
+            ) {
+                window.location.replace('/auth/reset-password');
+            }
         });
 
         // Nettoyage de l'abonnement

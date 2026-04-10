@@ -5,6 +5,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { Login } from '@/pages/auth/Login';
 import { Register } from '@/pages/auth/Register';
 import { ForgotPassword } from '@/pages/auth/ForgotPassword';
+import { ResetPassword } from '@/pages/auth/ResetPassword';
 
 const QuoteSign = lazy(() => import('@/pages/quotes/QuoteSignPage').then(m => ({ default: m.QuoteSignPage })));
 const QuoteTermsPage = lazy(() => import('@/pages/public/QuoteTermsPage').then(m => ({ default: m.QuoteTermsPage })));
@@ -53,6 +54,10 @@ export const publicRoutes = [
     {
         path: '/auth/forgot-password',
         element: <ForgotPassword />,
+    },
+    {
+        path: '/auth/reset-password',
+        element: <ResetPassword />,
     },
     {
         path: '/login',

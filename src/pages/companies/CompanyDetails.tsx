@@ -1088,7 +1088,7 @@ export function CompanyDetails() {
                   </Badge>
                 )}
                 {company.is_owner && (
-                  <Badge className="gap-1">
+                  <Badge className="gap-1 text-white">
                     <Crown className="h-3 w-3" />
                     Propriétaire
                   </Badge>
@@ -1098,7 +1098,10 @@ export function CompanyDetails() {
                 <p className="text-muted-foreground">{company.legal_name}</p>
               )}
               <div className="mt-1 flex items-center gap-2">
-                <Badge variant={isAdmin ? "default" : "secondary"}>
+                <Badge
+                  variant={isAdmin ? "default" : "secondary"}
+                  className={isAdmin ? "text-white" : undefined}
+                >
                   {getRoleLabel(company.role)}
                 </Badge>
                 {company.siren && (
@@ -2148,6 +2151,12 @@ export function CompanyDetails() {
                                 member.role === "accountant"
                                   ? "default"
                                   : "secondary"
+                              }
+                              className={
+                                member.role === "merchant_admin" ||
+                                member.role === "accountant"
+                                  ? "text-white"
+                                  : undefined
                               }
                             >
                               <Shield className="mr-1 h-3 w-3" />

@@ -30,6 +30,8 @@ const formatCurrency = (amount: number) =>
 const formatPercent = (value: number) =>
     `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
 
+const chartPrimaryColor = 'hsl(var(--primary))';
+
 const monthNames: Record<string, string> = {
     '01': 'Jan', '02': 'Fév', '03': 'Mar', '04': 'Avr',
     '05': 'Mai', '06': 'Jun', '07': 'Jul', '08': 'Aoû',
@@ -140,7 +142,7 @@ export function Dashboard() {
                         <CardContent>
                             <a
                                 href="/superadmin"
-                                className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                                className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
                             >
                                 Ouvrir l'espace Superadmin
                             </a>
@@ -279,9 +281,9 @@ export function Dashboard() {
                                     <Line
                                         type="monotone"
                                         dataKey="amount"
-                                        stroke="#7C3AED"
+                                        stroke={chartPrimaryColor}
                                         strokeWidth={2}
-                                        dot={{ fill: '#7C3AED', strokeWidth: 2 }}
+                                        dot={{ fill: chartPrimaryColor, strokeWidth: 2 }}
                                     />
                                 </LineChart>
                             </ResponsiveContainer>
