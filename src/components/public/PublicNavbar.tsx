@@ -30,7 +30,7 @@ export function PublicNavbar() {
                         onClick={() => scrollToSection('features')}
                         className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                     >
-                        Activité
+                        Produit
                     </button>
                     <button
                         onClick={() => scrollToSection('pricing')}
@@ -68,7 +68,7 @@ export function PublicNavbar() {
                             onClick={() => scrollToSection('features')}
                             className="text-left text-sm font-medium text-muted-foreground hover:text-foreground"
                         >
-                            Activité
+                            Produit
                         </button>
                         <button
                             onClick={() => scrollToSection('pricing')}
