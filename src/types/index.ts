@@ -416,6 +416,14 @@ export interface SirenSearchResult {
   creation_date: string;
 }
 
+export interface PaginatedSirenSearchResponse {
+  items: SirenSearchResult[];
+  total: number;
+  limit: number;
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
 // ============================================
 // TYPES POUR LES DEVIS
 // ============================================

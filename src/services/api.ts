@@ -23,6 +23,7 @@ import type {
   UpdateClientData,
   ClientQueryParams,
   SirenSearchResult,
+  PaginatedSirenSearchResponse,
   // Quotes
   Quote,
   PublicQuote,
@@ -315,6 +316,7 @@ export interface SubscriptionWithPlans {
   company_owner_role: "merchant_admin" | "accountant" | null;
   /** Entreprise cliente liée au cabinet (même règle de facturation que l'espace comptable). */
   is_company_linked_to_accountant_cabinet: boolean;
+  is_invited_merchant_admin: boolean;
   can_manage_billing: boolean;
   has_any_active_company_subscription: boolean;
   usage: {
@@ -380,9 +382,77 @@ export interface ValidateRegistrationPromotionResponse {
   pricing: RegistrationPricing;
 }
 
+export interface ValidateSubscriptionPromotionPayload {
+  plan_slug: string;
+  billing_period: "monthly" | "yearly";
+  promotion_code: string;
+}
+
+export interface ValidateSubscriptionPromotionResponse {
+  pricing: RegistrationPricing;
+}
+
 export interface FinalizeRegistrationPaymentResponse {
   status: "completed" | "processing";
   message: string;
+}
+
+export interface PendingCompanySummary {
+  name: string;
+  legal_name: string | null;
+  siren: string | null;
+  address: string | null;
+  postal_code: string | null;
+  city: string | null;
+  country: string | null;
+  email: string | null;
+  phone: string | null;
+  source_accountant_company_id: string | null;
+  accountant_company_name: string | null;
+}
+
+export interface PendingCompanyPaymentSessionSummary {
+  session_id: string;
+  status: string;
+  plan_slug: string | null;
+  billing_period: "monthly" | "yearly" | null;
+  company_summary: PendingCompanySummary;
+  finalized_company_id: string | null;
+  company: CompanyWithRole | null;
+}
+
+export interface CreatePendingCompanySubscriptionPayload {
+  session_id?: string;
+  company_data?: CreateCompanyData;
+  plan_slug?: string;
+  billing_period?: "monthly" | "yearly";
+  promotion_code?: string;
+}
+
+export interface CreatePendingCompanySubscriptionResponse {
+  session_id: string;
+  subscription_id: string | null;
+  client_secret: string | null;
+  status: string;
+  pricing: RegistrationPricing | null;
+  company_summary: PendingCompanySummary;
+}
+
+export interface ValidatePendingCompanyPromotionPayload {
+  session_id: string;
+  plan_slug: string;
+  billing_period: "monthly" | "yearly";
+  promotion_code: string;
+}
+
+export interface ValidatePendingCompanyPromotionResponse {
+  pricing: RegistrationPricing;
+}
+
+export interface FinalizePendingCompanySubscriptionResponse {
+  status: "completed" | "processing";
+  message: string;
+  company: CompanyWithRole | null;
 }
 
 function normalizePlanFeatures(value: unknown): string[] {
@@ -738,6 +808,7 @@ export const subscriptionService = {
   async subscribe(
     planSlug: string,
     billingPeriod: "monthly" | "yearly",
+    promotionCode?: string,
   ): Promise<{
     subscription_id: string;
     client_secret: string | null;
@@ -748,7 +819,50 @@ export const subscriptionService = {
       body: JSON.stringify({
         plan_slug: planSlug,
         billing_period: billingPeriod,
+        promotion_code: promotionCode,
       }),
+    });
+  },
+
+  async validateSubscriptionPromotion(
+    payload: ValidateSubscriptionPromotionPayload,
+  ): Promise<ValidateSubscriptionPromotionResponse> {
+    return fetchWithAuth("/subscription/promo/validate", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async createPendingCompanySubscription(
+    payload: CreatePendingCompanySubscriptionPayload,
+  ): Promise<CreatePendingCompanySubscriptionResponse> {
+    return fetchWithAuth("/subscription/company-creation", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getPendingCompanyPaymentSession(
+    sessionId: string,
+  ): Promise<PendingCompanyPaymentSessionSummary> {
+    return fetchWithAuth(`/subscription/company-creation/${sessionId}`);
+  },
+
+  async validatePendingCompanyPromotion(
+    payload: ValidatePendingCompanyPromotionPayload,
+  ): Promise<ValidatePendingCompanyPromotionResponse> {
+    return fetchWithAuth("/subscription/company-creation/promo/validate", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async finalizePendingCompanySubscription(
+    sessionId: string,
+  ): Promise<FinalizePendingCompanySubscriptionResponse> {
+    return fetchWithAuth("/subscription/company-creation/finalize", {
+      method: "POST",
+      body: JSON.stringify({ session_id: sessionId }),
     });
   },
 
@@ -1793,6 +1907,45 @@ export const sirenService = {
     queryParams.append("q", query.trim());
     if (limit) queryParams.append("limit", Math.min(limit, 5).toString());
     return fetchWithoutAuth(`/siren/public-lookup?${queryParams.toString()}`, {
+      signal,
+    });
+  },
+
+  async lookupPaged(
+    query: string,
+    limit?: number,
+    cursor?: string | null,
+    signal?: AbortSignal,
+  ): Promise<PaginatedSirenSearchResponse> {
+    const queryParams = new URLSearchParams();
+    queryParams.append("q", query);
+    if (limit) queryParams.append("limit", limit.toString());
+    if (cursor) queryParams.append("cursor", cursor);
+    return fetchWithAuth(`/siren/lookup-paged?${queryParams.toString()}`, {
+      signal,
+    });
+  },
+
+  async publicLookupPaged(
+    query: string,
+    limit?: number,
+    cursor?: string | null,
+    signal?: AbortSignal,
+  ): Promise<PaginatedSirenSearchResponse> {
+    if (!query || query.trim().length < MIN_ENTERPRISE_LOOKUP_QUERY_LENGTH) {
+      return {
+        items: [],
+        total: 0,
+        limit: Math.min(limit || 10, 25),
+        nextCursor: null,
+        hasMore: false,
+      };
+    }
+    const queryParams = new URLSearchParams();
+    queryParams.append("q", query.trim());
+    if (limit) queryParams.append("limit", Math.min(limit, 25).toString());
+    if (cursor) queryParams.append("cursor", cursor);
+    return fetchWithoutAuth(`/siren/public-lookup-paged?${queryParams.toString()}`, {
       signal,
     });
   },

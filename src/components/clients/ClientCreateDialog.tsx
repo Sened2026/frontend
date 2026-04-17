@@ -23,7 +23,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { EnterpriseLookupField } from '@/components/shared/EnterpriseLookupField';
 import { getClientEmailValidationMessage, normalizeClientEmail } from '@/lib/client-validation';
-import { clientService } from '@/services/api';
+import { ApiRequestError, clientService } from '@/services/api';
 import type { Client, ClientType, CreateClientData, SirenSearchResult } from '@/types';
 
 interface ClientCreateDialogProps {
@@ -155,10 +155,14 @@ export function ClientCreateDialog({
             });
             handleOpenChange(false);
         } catch (error: any) {
+            const permissionErrorMessage = "Vous n'avez pas les droits pour créer un client. Contactez un administrateur.";
+            const description = error instanceof ApiRequestError && error.status === 403
+                ? permissionErrorMessage
+                : error.message || 'Impossible de créer le client';
             toast({
                 variant: 'destructive',
                 title: 'Erreur',
-                description: error.message || 'Impossible de créer le client',
+                description,
             });
         } finally {
             setIsSubmitting(false);
@@ -171,7 +175,7 @@ export function ClientCreateDialog({
                 <DialogHeader className="border-b px-4 py-4">
                     <DialogTitle>Nouveau client</DialogTitle>
                     <DialogDescription>
-                        Créez un client sans quitter la création du devis.
+                        Créez un client sans quitter la page en cours.
                     </DialogDescription>
                 </DialogHeader>
                 <DialogBody className="px-4 py-3">

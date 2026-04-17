@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Briefcase, Building2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,6 +65,10 @@ export function CompanyCreateForm({
     onSubmit,
 }: CompanyCreateFormProps) {
     const { toast } = useToast();
+    const initialDataKey = useMemo(
+        () => JSON.stringify(initialData || null),
+        [initialData],
+    );
     const [formData, setFormData] = useState<CreateCompanyData>({
         ...DEFAULT_FORM_DATA,
         ...initialData,
@@ -81,7 +85,7 @@ export function CompanyCreateForm({
         });
         setPrefilledFields(new Set());
         setSelectedCompanyName(initialData?.name);
-    }, [initialData, lockedOwnerRole]);
+    }, [initialDataKey, lockedOwnerRole]);
 
     const handleInputChange = (
         event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -108,6 +112,7 @@ export function CompanyCreateForm({
     const handleSirenSelect = (result: SirenSearchResult) => {
         setFormData((previous) => ({
             ...previous,
+            name: result.company_name || previous.name,
             legal_name: result.company_name || previous.legal_name,
             siren: result.siren || previous.siren,
             vat_number: result.vat_number || previous.vat_number,
@@ -115,7 +120,6 @@ export function CompanyCreateForm({
             city: result.city || previous.city,
             postal_code: result.postal_code || previous.postal_code,
             country: result.country_code || previous.country || 'FR',
-            ...(previous.name ? {} : { name: result.company_name }),
         }));
         setSelectedCompanyName(result.company_name);
         toast({

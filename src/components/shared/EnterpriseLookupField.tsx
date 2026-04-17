@@ -36,10 +36,14 @@ export function EnterpriseLookupField({
     query,
     setQuery,
     results,
+    total,
+    hasMore,
+    isLoadingMore,
     isSearching,
     rateLimitUntil,
     selectedResult,
     search,
+    loadMore,
     selectResult,
     clearSelection,
     error,
@@ -58,7 +62,7 @@ export function EnterpriseLookupField({
     ? `Recherche temporairement indisponible, réessayez dans ${retryAfterRemaining} s.`
     : error;
   const isSearchDisabled =
-    isSearching || isRateLimited || query.trim().length < MIN_ENTERPRISE_LOOKUP_QUERY_LENGTH;
+    isSearching || isLoadingMore || isRateLimited || query.trim().length < MIN_ENTERPRISE_LOOKUP_QUERY_LENGTH;
 
   const handleClear = () => {
     clearSelection();
@@ -165,6 +169,9 @@ export function EnterpriseLookupField({
             <Search className="h-4 w-4" />
           </Button>
         </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          Pour de meilleurs résultats et moins de blocages, privilégiez la recherche par SIREN/SIRET.
+        </p>
 
         {displayError && (
           <p className="text-sm text-destructive mt-1">{displayError}</p>
@@ -172,6 +179,10 @@ export function EnterpriseLookupField({
 
         {results.length > 0 && (
           <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
+            <div className="px-3 py-2 text-xs text-muted-foreground border-b bg-muted/30">
+              {results.length} résultat{results.length > 1 ? 's' : ''} affiché{results.length > 1 ? 's' : ''}
+              {total > 0 ? ` sur ${total}` : ''}
+            </div>
             {results.map((result, index) => (
               <button
                 key={`${result.siren}-${index}`}
@@ -193,6 +204,21 @@ export function EnterpriseLookupField({
                 )}
               </button>
             ))}
+            {hasMore && (
+              <div className="border-t p-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => void loadMore()}
+                  disabled={isLoadingMore || isRateLimited}
+                >
+                  {isLoadingMore && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Charger plus
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

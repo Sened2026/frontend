@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { CompanyCreateForm } from '@/components/companies/CompanyCreateForm';
-import { companyService } from '@/services/api';
+import { companyService, subscriptionService } from '@/services/api';
 import type { CreateCompanyData } from '@/types';
 import { useCompany } from '@/hooks/useCompany';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -29,6 +29,26 @@ export function CompanyCreate() {
 
         try {
             setIsSubmitting(true);
+
+            if (data.owner_role === 'merchant_admin') {
+                const pendingSession =
+                    await subscriptionService.createPendingCompanySubscription({
+                        company_data: {
+                            ...data,
+                            owner_role: 'merchant_admin',
+                        },
+                    });
+
+                toast({
+                    title: 'Paiement requis',
+                    description: 'Finalisez le paiement pour créer cette entreprise.',
+                });
+                navigate(
+                    `/subscribe?pending_company_session=${pendingSession.session_id}`,
+                );
+                return;
+            }
+
             const company = await companyService.create(data);
             setCurrentCompany(company);
             await Promise.all([refreshCompanies(), refreshSubscription()]);
@@ -37,6 +57,11 @@ export function CompanyCreate() {
                 title: 'Entreprise créée',
                 description: `${company.name} est maintenant votre entreprise active.`,
             });
+
+            if (company.company_owner_role === 'merchant_admin' && company.role === 'merchant_admin') {
+                navigate('/subscribe');
+                return;
+            }
 
             navigate('/dashboard');
         } catch (error: any) {

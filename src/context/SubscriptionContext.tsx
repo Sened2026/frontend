@@ -16,6 +16,7 @@ interface SubscriptionContextType {
     ownerUserId: string | null;
     companyId: string | null;
     hasAnyActiveCompanySubscription: boolean;
+    isInvitedMerchantAdmin: boolean;
     planLimits: SubscriptionPlan | null;
     loading: boolean;
     refresh: () => Promise<void>;
@@ -34,6 +35,7 @@ const SubscriptionContext = createContext<SubscriptionContextType>({
     ownerUserId: null,
     companyId: null,
     hasAnyActiveCompanySubscription: false,
+    isInvitedMerchantAdmin: false,
     planLimits: null,
     loading: true,
     refresh: async () => {},
@@ -77,6 +79,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     const [isCompanyLinkedToAccountantCabinet, setIsCompanyLinkedToAccountantCabinet] = useState(false);
     const [canManageBilling, setCanManageBilling] = useState(false);
     const [hasAnyActiveCompanySubscription, setHasAnyActiveCompanySubscription] = useState(false);
+    const [isInvitedMerchantAdmin, setIsInvitedMerchantAdmin] = useState(false);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<Error | null>(null);
     const requestIdRef = useRef(0);
@@ -94,6 +97,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
             setIsCompanyLinkedToAccountantCabinet(false);
             setCanManageBilling(false);
             setHasAnyActiveCompanySubscription(false);
+            setIsInvitedMerchantAdmin(false);
             setLoadError(null);
             setLoading(false);
             return;
@@ -123,6 +127,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
             setIsCompanyLinkedToAccountantCabinet(data.is_company_linked_to_accountant_cabinet ?? false);
             setCanManageBilling(data.can_manage_billing);
             setHasAnyActiveCompanySubscription(data.has_any_active_company_subscription);
+            setIsInvitedMerchantAdmin(Boolean(data.is_invited_merchant_admin));
         } catch (error) {
             if (requestId !== requestIdRef.current) {
                 return;
@@ -155,9 +160,17 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         ? true
         : hasEffectiveSubscription
             || (!currentCompanyId && hasAnyActiveCompanySubscription)
-            || (!canManageBilling && hasAnyActiveCompanySubscription);
-    const needsSubscription = !loading && !loadError && Boolean(currentCompanyId) && canManageBilling && !hasEffectiveSubscription;
-    const isReadOnly = !loading && !loadError && Boolean(currentCompanyId) && !hasEffectiveSubscription;
+            || (!canManageBilling && (hasAnyActiveCompanySubscription || isInvitedMerchantAdmin));
+    const needsSubscription = !loading
+        && !loadError
+        && Boolean(currentCompanyId)
+        && canManageBilling
+        && !hasEffectiveSubscription;
+    const isReadOnly = !loading
+        && !loadError
+        && Boolean(currentCompanyId)
+        && canManageBilling
+        && !hasEffectiveSubscription;
 
     return (
         <SubscriptionContext.Provider
@@ -174,6 +187,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
                 ownerUserId,
                 companyId,
                 hasAnyActiveCompanySubscription,
+                isInvitedMerchantAdmin,
                 planLimits,
                 loading,
                 refresh,

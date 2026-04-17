@@ -44,7 +44,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/components/ui/use-toast';
-import { companyService } from '@/services/api';
+import { companyService, subscriptionService } from '@/services/api';
 import { useWebSocketEvent } from '@/context/WebSocketContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useCompany } from '@/hooks/useCompany';
@@ -66,6 +66,7 @@ export function CompaniesPage() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [companyToDelete, setCompanyToDelete] = useState<CompanyWithRole | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [createDialogInitialData, setCreateDialogInitialData] = useState<Partial<CreateCompanyData> | undefined>(undefined);
 
     const loadCompanies = useCallback(async () => {
         try {
@@ -114,10 +115,31 @@ export function CompaniesPage() {
 
         try {
             setIsSubmitting(true);
+
+            if (data.owner_role === 'merchant_admin') {
+                const pendingSession =
+                    await subscriptionService.createPendingCompanySubscription({
+                        company_data: {
+                            ...data,
+                            owner_role: 'merchant_admin',
+                        },
+                    });
+
+                handleCreateDialogOpenChange(false);
+                toast({
+                    title: 'Paiement requis',
+                    description: 'Finalisez le paiement pour créer cette entreprise.',
+                });
+                navigate(
+                    `/subscribe?pending_company_session=${pendingSession.session_id}`,
+                );
+                return;
+            }
+
             const company = await companyService.create(data);
             setCurrentCompany(company);
             await Promise.all([loadCompanies(), refreshCompanies(), refreshSubscription()]);
-            setIsCreateDialogOpen(false);
+            handleCreateDialogOpenChange(false);
             toast({
                 title: 'Entreprise créée',
                 description: `${company.name} est maintenant votre entreprise active.`,
@@ -186,36 +208,50 @@ export function CompaniesPage() {
         setIsDeleteDialogOpen(true);
     };
 
+    const buildMerchantCreationPrefill = (company: CompanyWithRole): Partial<CreateCompanyData> => ({
+        owner_role: 'merchant_admin',
+        source_accountant_company_id: company.id,
+        name: company.name,
+        legal_name: company.legal_name || '',
+        siren: company.siren || '',
+        vat_number: company.vat_number || '',
+        address: company.address || '',
+        city: company.city || '',
+        postal_code: company.postal_code || '',
+        country: company.country || 'FR',
+        phone: company.phone || '',
+        email: company.email || '',
+        website: company.website || '',
+        rib_iban: company.rib_iban || '',
+        rib_bic: company.rib_bic || '',
+        rib_bank_name: company.rib_bank_name || '',
+        default_vat_rate: company.default_vat_rate,
+        default_payment_terms: company.default_payment_terms,
+        quote_validity_days: company.quote_validity_days,
+        quote_footer: company.quote_footer || '',
+        invoice_footer: company.invoice_footer || '',
+    });
+
     const createDisabled = isReadOnly;
     const createDisabledReason = isReadOnly
         ? 'Abonnement requis'
         : undefined;
     const canCreateMerchantFromAccountant = currentCompany?.role === 'accountant' && currentCompany.is_owner;
-    const merchantCreationPrefill: Partial<CreateCompanyData> | undefined = canCreateMerchantFromAccountant
-        ? {
-            owner_role: 'merchant_admin',
-            source_accountant_company_id: currentCompany.id,
-            name: currentCompany.name,
-            legal_name: currentCompany.legal_name || '',
-            siren: currentCompany.siren || '',
-            vat_number: currentCompany.vat_number || '',
-            address: currentCompany.address || '',
-            city: currentCompany.city || '',
-            postal_code: currentCompany.postal_code || '',
-            country: currentCompany.country || 'FR',
-            phone: currentCompany.phone || '',
-            email: currentCompany.email || '',
-            website: currentCompany.website || '',
-            rib_iban: currentCompany.rib_iban || '',
-            rib_bic: currentCompany.rib_bic || '',
-            rib_bank_name: currentCompany.rib_bank_name || '',
-            default_vat_rate: currentCompany.default_vat_rate,
-            default_payment_terms: currentCompany.default_payment_terms,
-            quote_validity_days: currentCompany.quote_validity_days,
-            quote_footer: currentCompany.quote_footer || '',
-            invoice_footer: currentCompany.invoice_footer || '',
+    const handleCreateDialogOpenChange = (open: boolean) => {
+        setIsCreateDialogOpen(open);
+
+        if (open) {
+            if (canCreateMerchantFromAccountant && currentCompany) {
+                setCreateDialogInitialData(buildMerchantCreationPrefill(currentCompany));
+                return;
+            }
+
+            setCreateDialogInitialData(undefined);
+            return;
         }
-        : undefined;
+
+        setCreateDialogInitialData(undefined);
+    };
 
     return (
         <div className="mx-auto max-w-6xl space-y-6">
@@ -228,7 +264,7 @@ export function CompaniesPage() {
                             : 'Créez votre première entreprise ou gérez les accès existants.'}
                     </p>
                 </div>
-                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <Dialog open={isCreateDialogOpen} onOpenChange={handleCreateDialogOpenChange}>
                     <DialogTrigger asChild>
                         <Button disabled={createDisabled} title={createDisabledReason}>
                             <Plus className="mr-2 h-4 w-4" />
@@ -255,14 +291,14 @@ export function CompaniesPage() {
                                 formId="company-create-dialog-form"
                                 hideActions
                                 isSubmitting={isSubmitting}
-                                initialData={merchantCreationPrefill}
+                                initialData={createDialogInitialData}
                                 lockedOwnerRole={canCreateMerchantFromAccountant ? 'merchant_admin' : undefined}
-                                onCancel={() => setIsCreateDialogOpen(false)}
+                                onCancel={() => handleCreateDialogOpenChange(false)}
                                 onSubmit={handleCreateCompany}
                             />
                         </DialogBody>
                         <DialogFooter className="border-t px-6 py-4">
-                            <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)} disabled={isSubmitting}>
+                            <Button type="button" variant="outline" onClick={() => handleCreateDialogOpenChange(false)} disabled={isSubmitting}>
                                 Annuler
                             </Button>
                             <Button type="submit" form="company-create-dialog-form" disabled={isSubmitting}>

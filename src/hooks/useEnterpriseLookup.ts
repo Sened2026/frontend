@@ -1,5 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { MIN_ENTERPRISE_LOOKUP_QUERY_LENGTH } from '@/lib/enterprise-lookup';
+import {
+  readEnterpriseLookupCache,
+  writeEnterpriseLookupCache,
+} from '@/lib/enterprise-lookup-cache';
 import { sirenService } from '@/services/api';
 import type { SirenSearchResult } from '@/types';
 
@@ -27,11 +31,16 @@ export interface UseEnterpriseLookupReturn {
   query: string;
   setQuery: (q: string) => void;
   results: SirenSearchResult[];
+  total: number;
+  hasMore: boolean;
+  nextCursor: string | null;
   isSearching: boolean;
+  isLoadingMore: boolean;
   rateLimitUntil: number | null;
   selectedResult: SirenSearchResult | null;
   prefilledFields: Set<PrefillableField>;
   search: () => Promise<void>;
+  loadMore: () => Promise<void>;
   selectResult: (result: SirenSearchResult) => void;
   clearSelection: () => void;
   error: string | null;
@@ -44,7 +53,11 @@ export function useEnterpriseLookup(
 
   const [query, setQueryState] = useState('');
   const [results, setResults] = useState<SirenSearchResult[]>([]);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [rateLimitUntil, setRateLimitUntil] = useState<number | null>(null);
   const [selectedResult, setSelectedResult] = useState<SirenSearchResult | null>(null);
   const [prefilledFields, setPrefilledFields] = useState<Set<PrefillableField>>(new Set());
@@ -55,10 +68,15 @@ export function useEnterpriseLookup(
 
   const setQuery = useCallback((nextQuery: string) => {
     abortControllerRef.current?.abort();
+    requestIdRef.current += 1;
     setQueryState(nextQuery);
     setResults([]);
+    setTotal(0);
+    setHasMore(false);
+    setNextCursor(null);
     setError(null);
     setIsSearching(false);
+    setIsLoadingMore(false);
   }, []);
 
   const performSearch = useCallback(
@@ -67,8 +85,12 @@ export function useEnterpriseLookup(
       if (trimmed.length < MIN_ENTERPRISE_LOOKUP_QUERY_LENGTH) {
         abortControllerRef.current?.abort();
         setResults([]);
+        setTotal(0);
+        setHasMore(false);
+        setNextCursor(null);
         setError(null);
         setIsSearching(false);
+        setIsLoadingMore(false);
         return;
       }
 
@@ -79,17 +101,33 @@ export function useEnterpriseLookup(
       const requestId = ++requestIdRef.current;
 
       setIsSearching(true);
+      setIsLoadingMore(false);
       setError(null);
+
+      const cachedData = readEnterpriseLookupCache(mode, trimmed);
+      if (cachedData) {
+        setRateLimitUntil(null);
+        setResults(cachedData.items);
+        setTotal(cachedData.total);
+        setHasMore(cachedData.hasMore);
+        setNextCursor(cachedData.nextCursor);
+        setIsSearching(false);
+        return;
+      }
 
       try {
         const data = mode === 'public'
-          ? await sirenService.publicLookup(trimmed, undefined, controller.signal)
-          : await sirenService.lookup(trimmed, undefined, controller.signal);
+          ? await sirenService.publicLookupPaged(trimmed, undefined, null, controller.signal)
+          : await sirenService.lookupPaged(trimmed, undefined, null, controller.signal);
         if (requestId !== requestIdRef.current) {
           return;
         }
         setRateLimitUntil(null);
-        setResults(data);
+        setResults(data.items);
+        setTotal(data.total);
+        setHasMore(data.hasMore);
+        setNextCursor(data.nextCursor);
+        writeEnterpriseLookupCache(mode, trimmed, data);
       } catch (err: any) {
         if (err?.name === 'AbortError') {
           return;
@@ -102,12 +140,23 @@ export function useEnterpriseLookup(
             ? err.retryAfterSeconds
             : null;
         setRateLimitUntil(retryAfterSeconds ? Date.now() + retryAfterSeconds * 1000 : null);
+        const cachedFallback = readEnterpriseLookupCache(mode, trimmed);
         if (showErrors) {
           setError(err?.message || 'Erreur lors de la recherche');
         } else {
           setError(null);
         }
-        setResults([]);
+        if (cachedFallback) {
+          setResults(cachedFallback.items);
+          setTotal(cachedFallback.total);
+          setHasMore(cachedFallback.hasMore);
+          setNextCursor(cachedFallback.nextCursor);
+        } else {
+          setResults([]);
+          setTotal(0);
+          setHasMore(false);
+          setNextCursor(null);
+        }
       } finally {
         if (requestId === requestIdRef.current) {
           setIsSearching(false);
@@ -121,10 +170,53 @@ export function useEnterpriseLookup(
     await performSearch(query, true);
   }, [performSearch, query]);
 
+  const loadMore = useCallback(async () => {
+    const trimmed = query.trim();
+    if (!trimmed || !nextCursor || isLoadingMore || isSearching) {
+      return;
+    }
+
+    const requestId = requestIdRef.current;
+    setIsLoadingMore(true);
+    setError(null);
+
+    try {
+      const data = mode === 'public'
+        ? await sirenService.publicLookupPaged(trimmed, undefined, nextCursor)
+        : await sirenService.lookupPaged(trimmed, undefined, nextCursor);
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
+      setRateLimitUntil(null);
+      setResults((previous) => [...previous, ...data.items]);
+      setTotal(data.total);
+      setHasMore(data.hasMore);
+      setNextCursor(data.nextCursor);
+    } catch (err: any) {
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+      const retryAfterSeconds =
+        typeof err?.retryAfterSeconds === 'number' && err.retryAfterSeconds > 0
+          ? err.retryAfterSeconds
+          : null;
+      setRateLimitUntil(retryAfterSeconds ? Date.now() + retryAfterSeconds * 1000 : null);
+      setError(err?.message || 'Erreur lors de la recherche');
+    } finally {
+      if (requestId === requestIdRef.current) {
+        setIsLoadingMore(false);
+      }
+    }
+  }, [isLoadingMore, isSearching, mode, nextCursor, query]);
+
   const selectResult = useCallback(
     (result: SirenSearchResult) => {
       setSelectedResult(result);
       setResults([]);
+      setTotal(0);
+      setHasMore(false);
+      setNextCursor(null);
       setQuery('');
 
       // Calculer les champs préremplis (ceux qui ont une valeur non vide)
@@ -150,6 +242,9 @@ export function useEnterpriseLookup(
     setPrefilledFields(new Set());
     setQuery('');
     setResults([]);
+    setTotal(0);
+    setHasMore(false);
+    setNextCursor(null);
     setError(null);
   }, []);
 
@@ -190,11 +285,16 @@ export function useEnterpriseLookup(
     query,
     setQuery,
     results,
+    total,
+    hasMore,
+    nextCursor,
     isSearching,
+    isLoadingMore,
     rateLimitUntil,
     selectedResult,
     prefilledFields,
     search,
+    loadMore,
     selectResult,
     clearSelection,
     error,

@@ -38,6 +38,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/use-toast';
 import { ProductFormDialog } from '@/components/products/ProductFormDialog';
+import { ClientCreateDialog } from '@/components/clients/ClientCreateDialog';
 import { invoiceService, clientService, legalService, productService, quoteService } from '@/services/api';
 import { useOperationalCompany } from '@/hooks/useOperationalCompany';
 import type { Client, Product, CreateInvoiceData } from '@/types';
@@ -81,6 +82,7 @@ export function InvoiceCreate() {
     // Dialog pour nouveau produit
     const [newProductDialogOpen, setNewProductDialogOpen] = useState(false);
     const [newProductItemIndex, setNewProductItemIndex] = useState<number | null>(null);
+    const [newClientDialogOpen, setNewClientDialogOpen] = useState(false);
 
     // Confirmation envoi
     const [sendConfirmOpen, setSendConfirmOpen] = useState(false);
@@ -344,6 +346,11 @@ export function InvoiceCreate() {
         setNewProductItemIndex(null);
     };
 
+    const handleClientCreated = (newClient: Client) => {
+        setClients(prev => [...prev, newClient]);
+        setClientId(newClient.id);
+    };
+
     const calculateItemTotal = (item: InvoiceItemFormData) => {
         const quantity = Number(item.quantity) || 0;
         const unitPrice = Number(item.unit_price) || 0;
@@ -516,11 +523,29 @@ export function InvoiceCreate() {
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
                             <Label htmlFor="client">Client *</Label>
-                            <Select value={clientId} onValueChange={setClientId}>
+                            <Select
+                                value={clientId}
+                                onValueChange={(value) => {
+                                    if (value === '__new__') {
+                                        setNewClientDialogOpen(true);
+                                        return;
+                                    }
+                                    setClientId(value);
+                                }}
+                            >
                                 <SelectTrigger id="client">
                                     <SelectValue placeholder="Sélectionner un client" />
                                 </SelectTrigger>
                                 <SelectContent>
+                                    <SelectItem value="__new__">
+                                        <span className="flex items-center gap-2 text-primary">
+                                            <PlusCircle className="h-4 w-4" />
+                                            Créer un client
+                                        </span>
+                                    </SelectItem>
+                                    {clients.length > 0 && (
+                                        <div className="my-1 border-t" />
+                                    )}
                                     {clients.map((client) => (
                                         <SelectItem key={client.id} value={client.id}>
                                             {client.company_name || `${client.first_name} ${client.last_name}`}
@@ -1067,6 +1092,14 @@ export function InvoiceCreate() {
                     onOpenChange={setNewProductDialogOpen}
                     companyId={currentCompany.id}
                     onSuccess={handleProductCreated}
+                />
+            )}
+            {currentCompany && (
+                <ClientCreateDialog
+                    open={newClientDialogOpen}
+                    onOpenChange={setNewClientDialogOpen}
+                    companyId={currentCompany.id}
+                    onClientCreated={handleClientCreated}
                 />
             )}
 

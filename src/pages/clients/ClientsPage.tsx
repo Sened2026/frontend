@@ -58,7 +58,7 @@ import { useOperationalCompany } from '@/hooks/useOperationalCompany';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useSubscription } from '@/hooks/useSubscription';
 import { getClientEmailValidationMessage, normalizeClientEmail } from '@/lib/client-validation';
-import { clientService, sirenService, chorusProService } from '@/services/api';
+import { ApiRequestError, clientService, sirenService, chorusProService } from '@/services/api';
 import type {
     Client,
     ClientType,
@@ -202,12 +202,13 @@ export function ClientsPage() {
 
         try {
             const isPublic = formClientSector === 'public' && currentCompany && chorusSettings?.enabled;
-            const [results, chorusResult] = await Promise.all([
-                sirenService.lookup(sirenSearch),
+            const [lookupPage, chorusResult] = await Promise.all([
+                sirenService.lookupPaged(sirenSearch),
                 isPublic
                     ? chorusProService.searchStructure(currentCompany.id, sirenSearch).catch(() => null)
                     : Promise.resolve(null),
             ]);
+            const results = lookupPage.items;
             setSirenResults(results);
             const chorusStructures = chorusResult?.listeStructures || [];
             setChorusSearchResults(chorusStructures);
@@ -215,7 +216,15 @@ export function ClientsPage() {
                 setSirenError('Aucune entreprise trouvée');
             }
         } catch (error: any) {
-            setSirenError(error.message || 'Erreur lors de la recherche');
+            if (error instanceof ApiRequestError && error.retryAfterSeconds && error.retryAfterSeconds > 0) {
+                setSirenError(
+                    `Recherche temporairement indisponible, réessayez dans ${error.retryAfterSeconds} s. Privilégiez la recherche par SIREN/SIRET.`,
+                );
+            } else {
+                setSirenError(
+                    `${error.message || 'Erreur lors de la recherche'} Privilégiez la recherche par SIREN/SIRET.`,
+                );
+            }
         } finally {
             setSirenLoading(false);
         }
@@ -606,7 +615,8 @@ export function ClientsPage() {
                             </Button>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            Remplissage automatique des informations de l'entreprise
+                            Remplissage automatique des informations de l'entreprise. Pour limiter les blocages,
+                            privilégiez la recherche par SIREN/SIRET.
                         </p>
                         {sirenError && (
                             <p className="text-xs text-destructive mt-2 flex items-center gap-1">
