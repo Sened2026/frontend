@@ -3,6 +3,7 @@ import { getApiBaseUrl } from "@/lib/api-config";
 import { MIN_ENTERPRISE_LOOKUP_QUERY_LENGTH } from "@/lib/enterprise-lookup";
 import type {
   CompanyWithRole,
+  CompanyRole,
   CompanyListResponse,
   SuperadminCompanyListResponse,
   CreateCompanyData,
@@ -163,7 +164,7 @@ export interface AvailablePlansResponse {
 export interface CompanyMember {
   id: string;
   user_id: string;
-  role: string;
+  role: CompanyRole;
   is_default: boolean;
   created_at: string;
   email: string | null;
@@ -328,6 +329,12 @@ export interface SubscriptionWithPlans {
     billable_members: number;
     billable_extra_members: number;
   };
+}
+
+export interface ChangeSubscriptionResponse {
+  subscription: SubscriptionWithPlans["subscription"];
+  client_secret: string | null;
+  status: string;
 }
 
 export interface RegistrationPaymentPayload {
@@ -795,27 +802,52 @@ export const subscriptionService = {
     return { plans, stripe_enabled };
   },
 
-  async changePlan(planSlug: string, billingPeriod?: "monthly" | "yearly") {
-    return fetchWithAuth("/subscription/change", {
+  async changePlan(
+    planSlug: string,
+    billingPeriod?: "monthly" | "yearly",
+    companyId?: string,
+  ): Promise<ChangeSubscriptionResponse> {
+    const headers: Record<string, string> = {};
+    if (companyId) headers["X-Company-Id"] = companyId;
+
+    const response = (await fetchWithAuth("/subscription/change", {
       method: "POST",
+      headers,
       body: JSON.stringify({
         plan_slug: planSlug,
         billing_period: billingPeriod,
       }),
-    });
+    })) as ChangeSubscriptionResponse;
+
+    return {
+      ...response,
+      subscription: response.subscription
+        ? {
+            ...response.subscription,
+            plan: response.subscription.plan
+              ? normalizeSubscriptionPlan(response.subscription.plan)
+              : null,
+          }
+        : null,
+    };
   },
 
   async subscribe(
     planSlug: string,
     billingPeriod: "monthly" | "yearly",
     promotionCode?: string,
+    companyId?: string,
   ): Promise<{
     subscription_id: string;
     client_secret: string | null;
     status: string;
   }> {
+    const headers: Record<string, string> = {};
+    if (companyId) headers["X-Company-Id"] = companyId;
+
     return fetchWithAuth("/subscription/subscribe", {
       method: "POST",
+      headers,
       body: JSON.stringify({
         plan_slug: planSlug,
         billing_period: billingPeriod,
@@ -866,9 +898,13 @@ export const subscriptionService = {
     });
   },
 
-  async createBillingPortalSession(): Promise<{ url: string }> {
+  async createBillingPortalSession(companyId?: string): Promise<{ url: string }> {
+    const headers: Record<string, string> = {};
+    if (companyId) headers["X-Company-Id"] = companyId;
+
     return fetchWithAuth("/subscription/billing-portal", {
       method: "POST",
+      headers,
     });
   },
 
@@ -1570,6 +1606,26 @@ export const companyService = {
   ): Promise<{ message: string }> {
     return fetchWithAuth(`/companies/${id}/members/${memberId}`, {
       method: "DELETE",
+    });
+  },
+
+  async updateMemberRole(
+    id: string,
+    memberId: string,
+    role: CompanyRole,
+  ): Promise<{ message: string }> {
+    return fetchWithAuth(`/companies/${id}/members/${memberId}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    });
+  },
+
+  async finalizeInvitation(
+    id: string,
+    invitationId: string,
+  ): Promise<any> {
+    return fetchWithAuth(`/companies/${id}/invitations/${invitationId}/finalize`, {
+      method: "POST",
     });
   },
 

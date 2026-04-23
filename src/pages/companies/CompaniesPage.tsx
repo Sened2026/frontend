@@ -208,28 +208,9 @@ export function CompaniesPage() {
         setIsDeleteDialogOpen(true);
     };
 
-    const buildMerchantCreationPrefill = (company: CompanyWithRole): Partial<CreateCompanyData> => ({
+    const buildMerchantCreationInitialData = (company: CompanyWithRole): Partial<CreateCompanyData> => ({
         owner_role: 'merchant_admin',
         source_accountant_company_id: company.id,
-        name: company.name,
-        legal_name: company.legal_name || '',
-        siren: company.siren || '',
-        vat_number: company.vat_number || '',
-        address: company.address || '',
-        city: company.city || '',
-        postal_code: company.postal_code || '',
-        country: company.country || 'FR',
-        phone: company.phone || '',
-        email: company.email || '',
-        website: company.website || '',
-        rib_iban: company.rib_iban || '',
-        rib_bic: company.rib_bic || '',
-        rib_bank_name: company.rib_bank_name || '',
-        default_vat_rate: company.default_vat_rate,
-        default_payment_terms: company.default_payment_terms,
-        quote_validity_days: company.quote_validity_days,
-        quote_footer: company.quote_footer || '',
-        invoice_footer: company.invoice_footer || '',
     });
 
     const createDisabled = isReadOnly;
@@ -242,7 +223,7 @@ export function CompaniesPage() {
 
         if (open) {
             if (canCreateMerchantFromAccountant && currentCompany) {
-                setCreateDialogInitialData(buildMerchantCreationPrefill(currentCompany));
+                setCreateDialogInitialData(buildMerchantCreationInitialData(currentCompany));
                 return;
             }
 
@@ -282,7 +263,7 @@ export function CompaniesPage() {
                             </DialogTitle>
                             <DialogDescription>
                                 {canCreateMerchantFromAccountant
-                                    ? 'La nouvelle société marchande sera préremplie depuis votre cabinet et liée automatiquement à celui-ci.'
+                                    ? 'La nouvelle société marchande sera liée automatiquement à votre cabinet.'
                                     : 'Choisissez le type de société puis complétez les informations principales.'}
                             </DialogDescription>
                         </DialogHeader>

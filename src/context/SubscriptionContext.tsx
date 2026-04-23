@@ -169,7 +169,6 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     const isReadOnly = !loading
         && !loadError
         && Boolean(currentCompanyId)
-        && canManageBilling
         && !hasEffectiveSubscription;
 
     return (

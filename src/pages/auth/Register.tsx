@@ -176,7 +176,7 @@ const PLAN_DETAILS: Record<
 
 export function Register() {
     const formatPrice = (price: number) => price.toFixed(2).replace(".", ",");
-    const { signUpWithEmail } = useAuth();
+    const { signUpWithEmail, signOut } = useAuth();
     const navigate = useNavigate();
     const { toast } = useToast();
     const [searchParams] = useSearchParams();
@@ -838,6 +838,7 @@ export function Register() {
             setAccountCreated(true);
 
             if (!requiresBillingSetup || !isPaidPlan) {
+                await signOut();
                 toast({
                     title: "Inscription réussie !",
                     description:

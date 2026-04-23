@@ -497,15 +497,22 @@ export function QuoteSignPage() {
                                         <span>-{formatCurrency(quote.discount_amount || 0)}</span>
                                     </div>
                                 )}
+                                {!quote.company?.is_vat_exempt && (
                                 <div className="flex justify-between text-sm">
                                     <span>TVA</span>
                                     <span>{formatCurrency(quote.total_vat)}</span>
                                 </div>
+                                )}
                                 <Separator />
                                 <div className="flex justify-between font-bold text-lg">
-                                    <span>Total TTC</span>
+                                    <span>{quote.company?.is_vat_exempt ? 'Total HT' : 'Total TTC'}</span>
                                     <span>{formatCurrency(quote.total)}</span>
                                 </div>
+                                {quote.company?.is_vat_exempt && (
+                                    <p className="text-xs text-muted-foreground">
+                                        {quote.company.vat_exemption_note || 'TVA non applicable, art. 293 B du CGI'}
+                                    </p>
+                                )}
                                 {(quote.deposit_percent || 0) > 0 && (
                                     <div className="flex justify-between text-sm text-blue-600 pt-2">
                                         <span>Acompte ({quote.deposit_percent}%)</span>

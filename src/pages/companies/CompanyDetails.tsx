@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Building2,
   Crown,
@@ -78,6 +78,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { ConfirmationDialog } from "@/components/ConfirmationDialog";
 import { ImageUpload } from "@/components/ImageUpload";
+import { PaymentForm } from "@/components/PaymentForm";
 import {
   companyService,
   subscriptionService,
@@ -120,6 +121,8 @@ type BankingData = {
 
 type SettingsData = {
   default_vat_rate: number;
+  is_vat_exempt: boolean;
+  vat_exemption_note: string;
   default_payment_terms: number;
   quote_validity_days: number;
   terms_and_conditions: string;
@@ -164,6 +167,7 @@ export function CompanyDetails() {
   const formatPrice = (price: number) => price.toFixed(2).replace(".", ",");
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { user, canInviteSuperadmin } = useAuth();
 
@@ -195,6 +199,12 @@ export function CompanyDetails() {
   const [inviteAddonAccepted, setInviteAddonAccepted] = useState(false);
   const [pendingInvite, setPendingInvite] =
     useState<InviteConfirmationPayload | null>(null);
+  const [memberPaymentClientSecret, setMemberPaymentClientSecret] =
+    useState<string | null>(null);
+  const [memberPaymentInvitationId, setMemberPaymentInvitationId] =
+    useState<string | null>(null);
+  const finalizedMemberInvitationRef = useRef<string | null>(null);
+  const [updatingMemberRoleId, setUpdatingMemberRoleId] = useState<string | null>(null);
 
   // Comptable associé
   const [accountantSearchQuery, setAccountantSearchQuery] = useState("");
@@ -288,6 +298,8 @@ export function CompanyDetails() {
 
   const [settingsForm, setSettingsForm] = useState<SettingsData>({
     default_vat_rate: 20,
+    is_vat_exempt: false,
+    vat_exemption_note: "TVA non applicable, art. 293 B du CGI",
     default_payment_terms: 30,
     quote_validity_days: 30,
     terms_and_conditions: "",
@@ -338,6 +350,9 @@ export function CompanyDetails() {
       });
       setSettingsForm({
         default_vat_rate: company.default_vat_rate ?? 20,
+        is_vat_exempt: Boolean(company.is_vat_exempt),
+        vat_exemption_note:
+          company.vat_exemption_note || "TVA non applicable, art. 293 B du CGI",
         default_payment_terms: company.default_payment_terms ?? 30,
         quote_validity_days: company.quote_validity_days ?? 30,
         terms_and_conditions: company.terms_and_conditions || "",
@@ -608,6 +623,10 @@ export function CompanyDetails() {
         case "settings":
           setSettingsForm({
             default_vat_rate: company.default_vat_rate ?? 20,
+            is_vat_exempt: Boolean(company.is_vat_exempt),
+            vat_exemption_note:
+              company.vat_exemption_note ||
+              "TVA non applicable, art. 293 B du CGI",
             default_payment_terms: company.default_payment_terms ?? 30,
             quote_validity_days: company.quote_validity_days ?? 30,
             terms_and_conditions: company.terms_and_conditions || "",
@@ -914,6 +933,12 @@ export function CompanyDetails() {
         payload.email,
         payload.role,
       );
+      if (result.status === "payment_required" && result.client_secret) {
+        setMemberPaymentClientSecret(result.client_secret);
+        setMemberPaymentInvitationId(result.id);
+        setInviteConfirmationOpen(false);
+        return;
+      }
       setInviteEmail("");
       resetInviteConfirmation();
       await loadMembers();
@@ -938,6 +963,98 @@ export function CompanyDetails() {
       if (is403) await loadMembers(); // refresh quota
     } finally {
       setInviting(false);
+    }
+  };
+
+  const handleMemberPaymentSuccess = async (
+    invitationId = memberPaymentInvitationId,
+    options?: { cleanUrl?: boolean },
+  ) => {
+    if (!id || !invitationId) return;
+
+    try {
+      const result = await companyService.finalizeInvitation(
+        id,
+        invitationId,
+      );
+      setMemberPaymentClientSecret(null);
+      setMemberPaymentInvitationId(null);
+      setInviteEmail("");
+      resetInviteConfirmation();
+      await loadMembers();
+      await loadInviteSubscriptionSummary();
+      toast({
+        title:
+          result.status === "accepted" ? "Membre ajouté" : "Invitation envoyée",
+        description:
+          result.status === "accepted"
+            ? "L'utilisateur a été ajouté à l'entreprise."
+            : "Un email d'invitation a été envoyé.",
+      });
+      if (options?.cleanUrl) {
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.delete("member_invitation");
+        nextParams.delete("payment_intent");
+        nextParams.delete("payment_intent_client_secret");
+        nextParams.delete("redirect_status");
+        setSearchParams(nextParams, { replace: true });
+      }
+    } catch (error: any) {
+      if (invitationId) {
+        finalizedMemberInvitationRef.current = null;
+      }
+      toast({
+        title: "Erreur",
+        description:
+          error.message || "Impossible de finaliser l'invitation.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    const invitationId = searchParams.get("member_invitation");
+    const hasStripeReturnParams =
+      Boolean(searchParams.get("payment_intent")) ||
+      Boolean(searchParams.get("payment_intent_client_secret")) ||
+      Boolean(searchParams.get("redirect_status"));
+
+    if (!id || !invitationId || !hasStripeReturnParams) {
+      return;
+    }
+
+    const finalizeKey = `${id}:${invitationId}`;
+    if (finalizedMemberInvitationRef.current === finalizeKey) {
+      return;
+    }
+    finalizedMemberInvitationRef.current = finalizeKey;
+    setActiveTab("members");
+
+    void handleMemberPaymentSuccess(invitationId, { cleanUrl: true });
+  }, [id, searchParams]);
+
+  const handleUpdateMemberRole = async (
+    memberUserId: string,
+    nextRole: CompanyRole,
+  ) => {
+    if (!id || !canManageMembers) return;
+
+    try {
+      setUpdatingMemberRoleId(memberUserId);
+      await companyService.updateMemberRole(id, memberUserId, nextRole);
+      await loadMembers();
+      toast({
+        title: "Rôle mis à jour",
+        description: "Le rôle du membre a été modifié.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de modifier ce rôle.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingMemberRoleId(null);
     }
   };
 
@@ -1658,7 +1775,7 @@ export function CompanyDetails() {
                     <NumericInput
                       id="default_vat_rate"
                       name="default_vat_rate"
-                      value={settingsForm.default_vat_rate || 20}
+                      value={settingsForm.default_vat_rate ?? 20}
                       onValueChange={(value) => {
                         setSettingsForm((prev) => ({
                           ...prev,
@@ -1671,6 +1788,34 @@ export function CompanyDetails() {
                     />
                   ) : (
                     <p className="text-sm">{company.default_vat_rate}%</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="is_vat_exempt">
+                    Franchise en base de TVA
+                  </Label>
+                  {editingSection === "settings" ? (
+                    <label className="flex h-10 items-center gap-3 rounded-md border px-3 text-sm">
+                      <input
+                        id="is_vat_exempt"
+                        type="checkbox"
+                        checked={settingsForm.is_vat_exempt}
+                        onChange={(event) =>
+                          setSettingsForm((prev) => ({
+                            ...prev,
+                            is_vat_exempt: event.target.checked,
+                            default_vat_rate: event.target.checked
+                              ? 0
+                              : prev.default_vat_rate,
+                          }))
+                        }
+                      />
+                      <span>Non assujettie à la TVA</span>
+                    </label>
+                  ) : (
+                    <p className="text-sm">
+                      {company.is_vat_exempt ? "Oui" : "Non"}
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -1728,6 +1873,29 @@ export function CompanyDetails() {
                   )}
                 </div>
               </div>
+              {(editingSection === "settings" || company.is_vat_exempt) && (
+                <div className="space-y-2">
+                  <Label htmlFor="vat_exemption_note">Mention TVA</Label>
+                  {editingSection === "settings" ? (
+                    <Input
+                      id="vat_exemption_note"
+                      name="vat_exemption_note"
+                      value={settingsForm.vat_exemption_note}
+                      onChange={(event) =>
+                        setSettingsForm((prev) => ({
+                          ...prev,
+                          vat_exemption_note: event.target.value,
+                        }))
+                      }
+                    />
+                  ) : (
+                    <p className="text-sm">
+                      {company.vat_exemption_note ||
+                        "TVA non applicable, art. 293 B du CGI"}
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -2145,23 +2313,52 @@ export function CompanyDetails() {
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
-                            <Badge
-                              variant={
-                                member.role === "merchant_admin" ||
-                                member.role === "accountant"
-                                  ? "default"
-                                  : "secondary"
-                              }
-                              className={
-                                member.role === "merchant_admin" ||
-                                member.role === "accountant"
-                                  ? "text-white"
-                                  : undefined
-                              }
-                            >
-                              <Shield className="mr-1 h-3 w-3" />
-                              {getRoleLabel(member.role as CompanyRole)}
-                            </Badge>
+                            {canManageMembers && availableRoles.length > 1 ? (
+                              <Select
+                                value={member.role}
+                                onValueChange={(value) =>
+                                  void handleUpdateMemberRole(
+                                    member.user_id,
+                                    value as CompanyRole,
+                                  )
+                                }
+                                disabled={updatingMemberRoleId === member.user_id}
+                              >
+                                <SelectTrigger className="h-8 w-[220px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {availableRoles
+                                    .filter((roleOption) => roleOption.value !== "superadmin")
+                                    .map((roleOption) => (
+                                      <SelectItem
+                                        key={roleOption.value}
+                                        value={roleOption.value}
+                                      >
+                                        {roleOption.label}
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <Badge
+                                variant={
+                                  member.role === "merchant_admin" ||
+                                  member.role === "accountant"
+                                    ? "default"
+                                    : "secondary"
+                                }
+                                className={
+                                  member.role === "merchant_admin" ||
+                                  member.role === "accountant"
+                                    ? "text-white"
+                                    : undefined
+                                }
+                              >
+                                <Shield className="mr-1 h-3 w-3" />
+                                {getRoleLabel(member.role as CompanyRole)}
+                              </Badge>
+                            )}
                             {canDeleteMember(member.role, member.user_id) && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
@@ -2733,6 +2930,34 @@ export function CompanyDetails() {
           </DialogContent>
         </Dialog>
       )}
+
+      <Dialog
+        open={Boolean(memberPaymentClientSecret)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setMemberPaymentClientSecret(null);
+            setMemberPaymentInvitationId(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer le paiement</DialogTitle>
+            <DialogDescription>
+              L'invitation sera envoyée après validation du paiement.
+            </DialogDescription>
+          </DialogHeader>
+          {memberPaymentClientSecret && (
+            <PaymentForm
+              clientSecret={memberPaymentClientSecret}
+              onSuccess={() => {
+                void handleMemberPaymentSuccess();
+              }}
+              returnUrl={`${window.location.origin}/companies/${id}?member_invitation=${memberPaymentInvitationId ?? ""}`}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog de confirmation de suppression */}
       <AlertDialog

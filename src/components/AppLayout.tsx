@@ -16,6 +16,7 @@ import {
     AlertTriangle,
     Building2,
     Crown,
+    RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +42,6 @@ function shouldShowSubscriptionBanner(pathname: string, isReadOnly: boolean): bo
     }
 
     const readOnlyPages = [
-        "/dashboard",
         "/accountant",
         "/settings",
         "/support",
@@ -52,6 +52,7 @@ function shouldShowSubscriptionBanner(pathname: string, isReadOnly: boolean): bo
     }
 
     const writeBlockingPages = [
+        "/dashboard",
         "/quotes",
         "/invoices",
         "/credit-notes",
@@ -180,16 +181,30 @@ function AppLayoutContent() {
         needsSubscription,
         isReadOnly,
         canManageBilling,
+        subscription,
         loading: subscriptionLoading,
+        refresh: refreshSubscription,
     } =
         useSubscription();
+    const [isRefreshingSubscription, setIsRefreshingSubscription] = useState(false);
     const hasAnyCompany = companies.length > 0;
+    const subscriptionCompanyName =
+        operationalCompany?.name || currentCompany?.name || "cette entreprise";
+    const hasStripeSubscription = Boolean(subscription?.stripe_subscription_id);
     const showSubscriptionBanner =
         companiesResolved &&
         !companiesLoading &&
         !subscriptionLoading &&
-        canManageBilling &&
         shouldShowSubscriptionBanner(location.pathname, isReadOnly);
+
+    const handleRefreshSubscription = async () => {
+        try {
+            setIsRefreshingSubscription(true);
+            await refreshSubscription();
+        } finally {
+            setIsRefreshingSubscription(false);
+        }
+    };
 
     const handleSignOut = async () => {
         try {
@@ -579,44 +594,80 @@ function AppLayoutContent() {
 
                 {/* Banner abonnement inactif */}
                 {showSubscriptionBanner && (
-                    <div className="flex items-center justify-between gap-3 bg-destructive px-6 py-3 text-destructive-foreground flex-shrink-0">
-                        <div className="flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5" />
-                            <span className="text-sm font-medium">
-                                {needsSubscription
-                                    ? canManageBilling
-                                        ? "Votre abonnement est inactif. Souscrivez à un forfait pour utiliser l'application."
-                                        : "L’abonnement de cette entreprise est inactif. Contactez son administrateur."
-                                    : canManageBilling
-                                      ? "Votre abonnement est suspendu. Les opérations d'écriture sont désactivées."
-                                      : "L’abonnement est géré par l’administrateur de l’entreprise. Les opérations d’écriture sont désactivées."}
-                            </span>
+                    <div className="flex flex-wrap items-center justify-between gap-3 bg-destructive px-6 py-3 text-destructive-foreground flex-shrink-0">
+                        <div className="flex min-w-0 items-start gap-2">
+                            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+                            <div className="min-w-0">
+                                <p className="text-sm font-medium">
+                                    {needsSubscription
+                                        ? canManageBilling
+                                            ? `L'abonnement de ${subscriptionCompanyName} est inactif.`
+                                            : `L'abonnement de ${subscriptionCompanyName} est inactif. Contactez son administrateur.`
+                                        : canManageBilling
+                                          ? `L'abonnement de ${subscriptionCompanyName} est suspendu. Les opérations d'écriture sont désactivées.`
+                                          : `L'abonnement de ${subscriptionCompanyName} est géré par son administrateur. Les opérations d'écriture sont désactivées.`}
+                                </p>
+                                {hasAnyCompany && (
+                                    <p className="text-xs opacity-90">
+                                        Vous pouvez changer d'entreprise avec le sélecteur du header.
+                                    </p>
+                                )}
+                            </div>
                         </div>
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={async () => {
-                                if (needsSubscription && canManageBilling) {
-                                    navigate("/subscribe");
-                                } else if (canManageBilling) {
-                                    try {
-                                        const { url } =
-                                            await subscriptionService.createBillingPortalSession();
-                                        window.location.href = url;
-                                    } catch {
-                                        navigate("/settings");
-                                    }
-                                } else {
-                                    navigate("/settings");
-                                }
-                            }}
-                        >
-                            {canManageBilling
-                                ? needsSubscription
-                                    ? "Souscrire à un forfait"
-                                    : "Mettre à jour le paiement"
-                                : "Voir les détails"}
-                        </Button>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => {
+                                    void handleRefreshSubscription();
+                                }}
+                                disabled={isRefreshingSubscription}
+                            >
+                                {isRefreshingSubscription ? (
+                                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <RefreshCw className="mr-2 h-4 w-4" />
+                                )}
+                                Actualiser
+                            </Button>
+                            {canManageBilling && needsSubscription && (
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => navigate("/subscribe")}
+                                >
+                                    Choisir un forfait
+                                </Button>
+                            )}
+                            {canManageBilling && hasStripeSubscription && (
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={async () => {
+                                        try {
+                                            const { url } =
+                                                await subscriptionService.createBillingPortalSession(
+                                                    operationalCompany?.id || currentCompany?.id,
+                                                );
+                                            window.location.href = url;
+                                        } catch {
+                                            navigate("/settings");
+                                        }
+                                    }}
+                                >
+                                    Gérer le paiement
+                                </Button>
+                            )}
+                            {!canManageBilling && (
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => navigate("/settings")}
+                                >
+                                    Voir les détails
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 )}
 

@@ -16,6 +16,8 @@ import { userService, subscriptionService, type UserProfile, type SubscriptionPl
 import { useSubscription } from '@/hooks/useSubscription';
 import { Badge } from '@/components/ui/badge';
 import { ConfirmationDialog } from '@/components/ConfirmationDialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PaymentForm } from '@/components/PaymentForm';
 
 /**
  * Page des paramètres avec onglets
@@ -43,6 +45,7 @@ export function SettingsPage() {
 
     // Polling après retour de Stripe Checkout
     const justSubscribed = searchParams.get('subscription') === 'success';
+    const justChangedSubscription = searchParams.get('subscription_change') === 'success';
 
     const cleanupPolling = useCallback(() => {
         if (pollingRef.current) {
@@ -52,7 +55,7 @@ export function SettingsPage() {
     }, []);
 
     useEffect(() => {
-        if (!justSubscribed) return;
+        if (!justSubscribed && !justChangedSubscription) return;
 
         let attempts = 0;
         const maxAttempts = 15;
@@ -62,20 +65,30 @@ export function SettingsPage() {
             await refreshSubscription();
             await loadData();
 
-            if (!needsSubscription || attempts >= maxAttempts) {
+            const shouldStopPolling = justChangedSubscription
+                ? attempts >= maxAttempts
+                : !needsSubscription || attempts >= maxAttempts;
+
+            if (shouldStopPolling) {
                 cleanupPolling();
                 searchParams.delete('subscription');
+                searchParams.delete('subscription_change');
                 searchParams.delete('session_id');
+                searchParams.delete('payment_intent');
+                searchParams.delete('payment_intent_client_secret');
+                searchParams.delete('redirect_status');
                 setSearchParams(searchParams, { replace: true });
             }
         }, 2000);
 
         return cleanupPolling;
-    }, [justSubscribed]);
+    }, [justSubscribed, justChangedSubscription]);
 
     const [, setProfile] = useState<UserProfile | null>(null);
     const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
     const [pendingPlan, setPendingPlan] = useState<SubscriptionPlan | null>(null);
+    const [paymentPlan, setPaymentPlan] = useState<SubscriptionPlan | null>(null);
+    const [changePlanPaymentClientSecret, setChangePlanPaymentClientSecret] = useState<string | null>(null);
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
     const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<'monthly' | 'yearly'>(currentBillingPeriod);
     const canShowSubscriptionTab = currentCompany?.role === 'merchant_admin';
@@ -86,17 +99,21 @@ export function SettingsPage() {
     const [phone, setPhone] = useState('');
     const [address, setAddress] = useState('');
 
-    // Charge les données au montage
+    useEffect(() => {
+        setSelectedBillingPeriod(currentBillingPeriod);
+    }, [currentBillingPeriod]);
+
+    // Charge les données au montage et quand l'entreprise sélectionnée change
     useEffect(() => {
         loadData();
-    }, []);
+    }, [currentCompany?.id]);
 
     const loadData = async () => {
         try {
             setLoading(true);
             const [profileData, subscriptionData] = await Promise.all([
                 userService.getProfile(),
-                subscriptionService.getSubscriptionWithPlans(),
+                subscriptionService.getSubscriptionWithPlans(currentCompany?.id),
             ]);
 
             setProfile(profileData);
@@ -157,7 +174,31 @@ export function SettingsPage() {
 
             setSaving(true);
 
-            await subscriptionService.changePlan(plan.slug, selectedBillingPeriod);
+            const result = await subscriptionService.changePlan(
+                plan.slug,
+                selectedBillingPeriod,
+                currentCompany?.id,
+            );
+
+            if (result.client_secret) {
+                setPaymentPlan(plan);
+                setChangePlanPaymentClientSecret(result.client_secret);
+                toast({
+                    title: 'Paiement à confirmer',
+                    description: 'Confirmez le paiement pour appliquer le changement de plan.',
+                });
+                return;
+            }
+
+            if (result.status === 'pending') {
+                await refreshSubscription();
+                toast({
+                    title: 'Paiement en cours',
+                    description: 'Le changement de plan sera appliqué dès confirmation du paiement.',
+                });
+                return;
+            }
+
             await loadData();
             await refreshSubscription();
             toast({
@@ -174,6 +215,20 @@ export function SettingsPage() {
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleChangePlanPaymentSuccess = async () => {
+        setChangePlanPaymentClientSecret(null);
+        setPaymentPlan(null);
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set('subscription_change', 'success');
+        setSearchParams(nextParams, { replace: true });
+        await loadData();
+        await refreshSubscription();
+        toast({
+            title: 'Paiement confirmé',
+            description: 'Votre changement de plan est en cours d’application.',
+        });
     };
 
     const handleChangePlan = async (plan: SubscriptionPlan) => {
@@ -592,6 +647,35 @@ export function SettingsPage() {
                 cancelLabel="Annuler"
                 variant="destructive"
             />
+            <Dialog
+                open={Boolean(changePlanPaymentClientSecret)}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setChangePlanPaymentClientSecret(null);
+                        setPaymentPlan(null);
+                    }
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Confirmer le paiement</DialogTitle>
+                        <DialogDescription>
+                            {paymentPlan
+                                ? `Confirmez le paiement pour appliquer le plan ${paymentPlan.name}.`
+                                : 'Confirmez le paiement pour appliquer le changement de plan.'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    {changePlanPaymentClientSecret && (
+                        <PaymentForm
+                            clientSecret={changePlanPaymentClientSecret}
+                            onSuccess={() => {
+                                void handleChangePlanPaymentSuccess();
+                            }}
+                            returnUrl={`${window.location.origin}/settings?subscription_change=success`}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

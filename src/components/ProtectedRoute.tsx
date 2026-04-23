@@ -10,11 +10,10 @@ interface ProtectedRouteProps {
 /**
  * Composant de route protégée
  * Redirige vers /login si l'utilisateur n'est pas authentifié
- * Redirige vers /subscribe si l'utilisateur n'a pas d'abonnement actif
  */
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
     const { user, loading: authLoading } = useAuth();
-    const { needsSubscription, canAccessApp, canManageBilling, loading: subLoading } = useSubscription();
+    const { loading: subLoading } = useSubscription();
     const location = useLocation();
     const [hasResolvedInitialLoad, setHasResolvedInitialLoad] = useState(false);
 
@@ -40,16 +39,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     // Redirige vers login si non authentifié
     if (!user) {
         return <Navigate to="/auth/login" state={{ from: location }} replace />;
-    }
-
-    // Redirige vers /subscribe si pas d'abonnement actif
-    // (sauf si déjà sur /subscribe ou /settings, ou retour de Stripe Checkout)
-    const allowedWithoutSub = ['/subscribe', '/settings'];
-    const isAllowed = allowedWithoutSub.some(p => location.pathname.startsWith(p));
-    const searchParams = new URLSearchParams(location.search);
-    const justSubscribed = searchParams.get('subscription') === 'success';
-    if (!canAccessApp && needsSubscription && canManageBilling && !isAllowed && !justSubscribed) {
-        return <Navigate to="/subscribe" replace />;
     }
 
     // Autorisé : affiche le contenu protégé

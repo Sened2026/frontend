@@ -128,6 +128,8 @@ export interface Company {
   rib_iban: string | null;
   rib_bic: string | null;
   rib_bank_name: string | null;
+  is_vat_exempt: boolean;
+  vat_exemption_note: string | null;
   default_vat_rate: number;
   default_payment_terms: number;
   terms_and_conditions: string | null;
@@ -198,6 +200,8 @@ export interface CreateCompanyData {
   rib_iban?: string;
   rib_bic?: string;
   rib_bank_name?: string;
+  is_vat_exempt?: boolean;
+  vat_exemption_note?: string;
   default_vat_rate?: number;
   default_payment_terms?: number;
   terms_and_conditions?: string;

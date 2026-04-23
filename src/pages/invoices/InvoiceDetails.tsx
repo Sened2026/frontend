@@ -988,15 +988,22 @@ export function InvoiceDetails() {
                                     <span>-{formatCurrency(invoice.discount_amount)}</span>
                                 </div>
                             )}
+                            {!invoice.company?.is_vat_exempt && (
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">TVA</span>
                                 <span>{formatCurrency(invoice.total_vat)}</span>
                             </div>
+                            )}
                             <Separator />
                             <div className="flex justify-between font-bold text-lg">
-                                <span>Total TTC</span>
+                                <span>{invoice.company?.is_vat_exempt ? 'Total HT' : 'Total TTC'}</span>
                                 <span>{formatCurrency(invoice.total)}</span>
                             </div>
+                            {invoice.company?.is_vat_exempt && (
+                                <p className="text-xs text-muted-foreground">
+                                    {invoice.company.vat_exemption_note || 'TVA non applicable, art. 293 B du CGI'}
+                                </p>
+                            )}
                         </CardContent>
                     </Card>
 

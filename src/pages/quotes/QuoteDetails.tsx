@@ -592,15 +592,22 @@ export function QuoteDetails() {
                                     <span>-{formatCurrency(quote.discount_amount)}</span>
                                 </div>
                             )}
+                            {!quote.company?.is_vat_exempt && (
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">TVA</span>
                                 <span>{formatCurrency(quote.total_vat)}</span>
                             </div>
+                            )}
                             <Separator />
                             <div className="flex justify-between font-bold text-lg">
-                                <span>Total TTC</span>
+                                <span>{quote.company?.is_vat_exempt ? 'Total HT' : 'Total TTC'}</span>
                                 <span>{formatCurrency(quote.total)}</span>
                             </div>
+                            {quote.company?.is_vat_exempt && (
+                                <p className="text-xs text-muted-foreground">
+                                    {quote.company.vat_exemption_note || 'TVA non applicable, art. 293 B du CGI'}
+                                </p>
+                            )}
                         </CardContent>
                     </Card>
 

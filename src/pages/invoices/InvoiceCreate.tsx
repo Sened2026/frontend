@@ -221,7 +221,7 @@ export function InvoiceCreate() {
             description: '',
             quantity: 1,
             unit_price: 0,
-            vat_rate: currentCompany?.default_vat_rate || 20,
+            vat_rate: currentCompany?.default_vat_rate ?? 20,
             discount_value: 0,
             discount_type: 'percentage',
         }]);
@@ -257,7 +257,7 @@ export function InvoiceCreate() {
     ): { nextItems: InvoiceItemFormData[]; expandedGroupKey?: string } => {
         const catalogLines = getCatalogProductLines(product);
         const currentItem = prevItems[index];
-        const defaultVatRate = currentCompany?.default_vat_rate || 20;
+        const defaultVatRate = currentCompany?.default_vat_rate ?? 20;
         const canMergeIntoExisting = Boolean(
             currentItem && isDraftItemForProductSelection(currentItem, defaultVatRate),
         );
@@ -1054,14 +1054,21 @@ export function InvoiceCreate() {
                                 <span>-{formatCurrency(totals.globalDiscount)}</span>
                             </div>
                         )}
+                        {!currentCompany?.is_vat_exempt && (
                         <div className="flex justify-between text-sm">
                             <span>TVA</span>
                             <span>{formatCurrency(totals.totalVAT)}</span>
                         </div>
+                        )}
                         <div className="border-t pt-3 flex justify-between font-bold text-lg">
-                            <span>Total TTC</span>
+                            <span>{currentCompany?.is_vat_exempt ? 'Total HT' : 'Total TTC'}</span>
                             <span>{formatCurrency(totals.totalTTC)}</span>
                         </div>
+                        {currentCompany?.is_vat_exempt && (
+                            <p className="text-xs text-muted-foreground">
+                                {currentCompany.vat_exemption_note || 'TVA non applicable, art. 293 B du CGI'}
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
             </div>

@@ -6,6 +6,7 @@ import {
     Building2,
     Check,
     Loader2,
+    Mail,
     MapPin,
     Phone,
     TicketPercent,
@@ -82,68 +83,93 @@ function PendingCompanySummaryCard({
         [summary.postal_code, summary.city].filter(Boolean).join(' '),
         summary.country,
     ].filter(Boolean);
+    const identityItems = [
+        { label: 'Nom commercial', value: summary.name },
+        { label: 'Raison sociale', value: summary.legal_name },
+        { label: 'SIREN', value: summary.siren },
+        { label: 'Cabinet lié', value: summary.accountant_company_name },
+    ].filter((item): item is { label: string; value: string } => Boolean(item.value));
+    const contactItems = [
+        addressParts.length > 0
+            ? {
+                icon: MapPin,
+                value: addressParts.join(', '),
+            }
+            : null,
+        summary.email
+            ? {
+                icon: Mail,
+                value: summary.email,
+            }
+            : null,
+        summary.phone
+            ? {
+                icon: Phone,
+                value: summary.phone,
+            }
+            : null,
+    ].filter(
+        (item): item is { icon: typeof MapPin; value: string } => item !== null,
+    );
 
     return (
-        <Card className="mx-auto mb-6 w-full max-w-3xl text-left">
-            <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                    <Building2 className="h-5 w-5" />
-                    Entreprise qui sera ajoutée après paiement
-                </CardTitle>
+        <Card className="mx-auto mb-6 w-full max-w-2xl overflow-hidden text-left shadow-sm">
+            <CardHeader className="border-b bg-muted/30 px-5 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                        <Building2 className="h-5 w-5" />
+                        Entreprise à créer
+                    </CardTitle>
+                    <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+                        En attente du paiement
+                    </span>
+                </div>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                    <div>
-                        <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                            Nom
+            <CardContent className="space-y-5 p-5">
+                <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Dossier préparé
+                    </p>
+                    <h2 className="mt-1 text-2xl font-semibold leading-tight">
+                        {summary.name}
+                    </h2>
+                    {summary.legal_name && summary.legal_name !== summary.name && (
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            {summary.legal_name}
                         </p>
-                        <p className="font-medium">{summary.name}</p>
-                    </div>
-                    {summary.legal_name && (
-                        <div>
-                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                                Raison sociale
-                            </p>
-                            <p>{summary.legal_name}</p>
-                        </div>
-                    )}
-                    {summary.siren && (
-                        <div>
-                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                                SIREN
-                            </p>
-                            <p>{summary.siren}</p>
-                        </div>
-                    )}
-                    {summary.accountant_company_name && (
-                        <div>
-                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                                Cabinet lié
-                            </p>
-                            <p>{summary.accountant_company_name}</p>
-                        </div>
                     )}
                 </div>
-                <div className="space-y-2">
-                    {addressParts.length > 0 && (
-                        <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                            <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-                            <span>{addressParts.join(', ')}</span>
+
+                <div className="grid gap-x-8 gap-y-4 border-y py-4 sm:grid-cols-2">
+                    {identityItems.map((item) => (
+                        <div key={item.label} className="min-w-0">
+                            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                                {item.label}
+                            </p>
+                            <p className="mt-1 truncate text-sm font-medium">
+                                {item.value}
+                            </p>
                         </div>
-                    )}
-                    {summary.phone && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Phone className="h-4 w-4 shrink-0" />
-                            <span>{summary.phone}</span>
-                        </div>
-                    )}
-                    {summary.email && (
-                        <div className="text-sm text-muted-foreground">
-                            {summary.email}
-                        </div>
-                    )}
-                    <p className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-primary">
-                        Cette entreprise n’est créée qu’après validation du paiement.
+                    ))}
+                </div>
+
+                {contactItems.length > 0 && (
+                    <div className="grid gap-2 text-sm text-muted-foreground">
+                        {contactItems.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                                <div key={item.value} className="flex items-start gap-2">
+                                    <Icon className="mt-0.5 h-4 w-4 shrink-0" />
+                                    <span className="min-w-0 break-words">{item.value}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                <div className="rounded-md border-l-2 border-primary bg-primary/5 px-4 py-3">
+                    <p className="text-sm font-medium text-primary">
+                        La création sera finalisée automatiquement après validation du paiement.
                     </p>
                 </div>
             </CardContent>
@@ -480,6 +506,7 @@ export function SubscribePage() {
                 plan.slug,
                 billingPeriod,
                 normalizedPromoCode || undefined,
+                currentCompany?.id,
             );
 
             if (result.status === 'active') {
