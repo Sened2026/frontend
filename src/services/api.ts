@@ -531,6 +531,9 @@ function containsTechnicalDetails(message: string): boolean {
     /base de donn[ée]es/i,
     /migration/i,
     /backend/i,
+    /duplicate key/i,
+    /unique constraint/i,
+    /constraint/i,
   ].some((pattern) => pattern.test(message));
 }
 
@@ -1625,6 +1628,15 @@ export const companyService = {
     invitationId: string,
   ): Promise<any> {
     return fetchWithAuth(`/companies/${id}/invitations/${invitationId}/finalize`, {
+      method: "POST",
+    });
+  },
+
+  async resendInvitation(
+    id: string,
+    invitationId: string,
+  ): Promise<{ message: string }> {
+    return fetchWithAuth(`/companies/${id}/invitations/${invitationId}/resend`, {
       method: "POST",
     });
   },

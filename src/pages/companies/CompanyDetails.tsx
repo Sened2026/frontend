@@ -31,6 +31,7 @@ import {
   Search,
   LinkIcon,
   Unlink,
+  Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -205,6 +206,7 @@ export function CompanyDetails() {
     useState<string | null>(null);
   const finalizedMemberInvitationRef = useRef<string | null>(null);
   const [updatingMemberRoleId, setUpdatingMemberRoleId] = useState<string | null>(null);
+  const [resendingInvitationId, setResendingInvitationId] = useState<string | null>(null);
 
   // Comptable associé
   const [accountantSearchQuery, setAccountantSearchQuery] = useState("");
@@ -955,9 +957,14 @@ export function CompanyDetails() {
       });
     } catch (error: any) {
       const is403 = error.message?.includes("Limite atteinte");
+      const isPendingInvite = error.message?.includes(
+        "invitation est déjà en attente",
+      );
       toast({
         title: is403 ? "Limite de membres atteinte" : "Erreur",
-        description: error.message || "Impossible d'envoyer l'invitation.",
+        description: isPendingInvite
+          ? "Une invitation est déjà en attente pour cet email. Vous pouvez la renvoyer depuis la liste des invitations en attente."
+          : error.message || "Impossible d'envoyer l'invitation.",
         variant: "destructive",
       });
       if (is403) await loadMembers(); // refresh quota
@@ -1076,6 +1083,26 @@ export function CompanyDetails() {
         description: error.message || "Impossible de retirer le membre.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleResendInvitation = async (invitationId: string) => {
+    if (!id || !canManageMembers) return;
+    try {
+      setResendingInvitationId(invitationId);
+      await companyService.resendInvitation(id, invitationId);
+      toast({
+        title: "Invitation renvoyée",
+        description: "L'email d'invitation a été renvoyé.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de renvoyer l'invitation.",
+        variant: "destructive",
+      });
+    } finally {
+      setResendingInvitationId(null);
     }
   };
 
@@ -2446,41 +2473,62 @@ export function CompanyDetails() {
                                 {getRoleLabel(invitation.role as CompanyRole)}
                               </Badge>
                               {canManageMembers && (
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 text-destructive hover:text-destructive"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>
-                                        Annuler cette invitation ?
-                                      </AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        L'invitation envoyée à {invitation.email}{" "}
-                                        sera annulée.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>
-                                        Garder
-                                      </AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() =>
-                                          handleCancelInvitation(invitation.id)
-                                        }
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() =>
+                                      handleResendInvitation(invitation.id)
+                                    }
+                                    disabled={
+                                      resendingInvitationId === invitation.id
+                                    }
+                                    aria-label={`Renvoyer l'invitation à ${invitation.email}`}
+                                    title="Renvoyer l'invitation"
+                                  >
+                                    {resendingInvitationId === invitation.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Send className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-destructive hover:text-destructive"
                                       >
-                                        Annuler l'invitation
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>
+                                          Annuler cette invitation ?
+                                        </AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          L'invitation envoyée à {invitation.email}{" "}
+                                          sera annulée.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>
+                                          Garder
+                                        </AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() =>
+                                            handleCancelInvitation(invitation.id)
+                                          }
+                                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                        >
+                                          Annuler l'invitation
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </>
                               )}
                             </div>
                           </div>
@@ -2493,7 +2541,6 @@ export function CompanyDetails() {
             )}
           </TabsContent>
         )}
-
         {/* Onglet Chorus Pro temporairement masqué dans Mes entreprises. */}
 
         {/* Onglet Comptable associé */}
