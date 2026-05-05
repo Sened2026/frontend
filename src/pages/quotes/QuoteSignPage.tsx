@@ -792,9 +792,9 @@ export function QuoteSignPage() {
                             <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
                             <h2 className="text-xl font-bold text-green-800 mb-2">Devis accepté !</h2>
                             <p className="text-green-700">
-                                {quote.status === 'converted'
-                                    ? 'Merci pour votre confiance. Le devis a été signé et une facture a été générée.'
-                                    : 'Merci pour votre confiance. Vous allez recevoir une confirmation par email.'}
+	                                {quote.status === 'converted'
+	                                    ? 'Merci pour votre confiance. Le devis a été signé et une facture a été générée. Elle vous sera envoyée prochainement.'
+	                                    : 'Merci pour votre confiance. Vous allez recevoir une confirmation par email.'}
                             </p>
                         </CardContent>
                     </Card>
