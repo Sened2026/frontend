@@ -823,9 +823,16 @@ export function Register() {
                     }
                 } catch (precheckError) {
                     console.warn(
-                        "Pré-vérification d'inscription indisponible, poursuite du signup.",
+                        "Pré-vérification d'inscription indisponible.",
                         precheckError,
                     );
+                    toast({
+                        title: "Vérification impossible",
+                        description:
+                            "Impossible de vérifier la disponibilité du SIREN pour le moment. Réessayez dans quelques instants.",
+                        variant: "destructive",
+                    });
+                    return false;
                 }
             }
 
