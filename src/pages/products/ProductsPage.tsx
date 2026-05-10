@@ -640,16 +640,17 @@ export function ProductsPage() {
     return (
         <div className="mx-auto max-w-6xl space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                     <h1 className="text-2xl font-bold">Produits & Services</h1>
                     <p className="text-muted-foreground">Gérez votre catalogue</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:items-center">
                     <Button 
                         variant="outline"
                         onClick={() => setIsCategoryManagerOpen(true)}
                         disabled={!currentCompany}
+                        className="w-full sm:w-auto"
                     >
                         <Tag className="mr-2 h-4 w-4" />
                         Catégories ({categories.length})
@@ -659,6 +660,7 @@ export function ProductsPage() {
                             onClick={() => setIsCreateDialogOpen(true)}
                             disabled={!currentCompany || isReadOnly}
                             title={isReadOnly ? 'Abonnement requis' : undefined}
+                            className="w-full sm:w-auto"
                         >
                             <Plus className="mr-2 h-4 w-4" />
                             Nouveau produit
@@ -673,13 +675,13 @@ export function ProductsPage() {
                     <CardHeader className="pb-4">
                         <div className="flex flex-col gap-4">
                             {/* Titre et compteur */}
-                            <div className="flex items-center justify-between">
-                                <div>
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0">
                                     <CardTitle className="flex items-center gap-2">
-                                        <Package className="h-5 w-5" />
-                                        Votre catalogue
+                                        <Package className="h-5 w-5 shrink-0" />
+                                        <span className="truncate">Votre catalogue</span>
                                     </CardTitle>
-                                    <CardDescription>
+                                    <CardDescription className="truncate">
                                         {totalProducts} produit{totalProducts > 1 ? 's' : ''} pour {currentCompany.name}
                                     </CardDescription>
                                 </div>

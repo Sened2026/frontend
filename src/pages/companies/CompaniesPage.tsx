@@ -236,8 +236,8 @@ export function CompaniesPage() {
 
     return (
         <div className="mx-auto max-w-6xl space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                     <h1 className="text-2xl font-bold">Entreprises</h1>
                     <p className="text-muted-foreground">
                         {companies.length > 0
@@ -247,7 +247,7 @@ export function CompaniesPage() {
                 </div>
                 <Dialog open={isCreateDialogOpen} onOpenChange={handleCreateDialogOpenChange}>
                     <DialogTrigger asChild>
-                        <Button disabled={createDisabled} title={createDisabledReason}>
+                        <Button className="w-full sm:w-auto" disabled={createDisabled} title={createDisabledReason}>
                             <Plus className="mr-2 h-4 w-4" />
                             {canCreateMerchantFromAccountant
                                 ? 'Créer une entreprise marchande'
@@ -346,13 +346,13 @@ export function CompaniesPage() {
                             {filteredCompanies.map((company) => (
                                 <Card
                                     key={company.id}
-                                    className="cursor-pointer transition-shadow hover:shadow-md"
+                                    className="min-w-0 cursor-pointer transition-shadow hover:shadow-md"
                                     onClick={() => navigate(`/companies/${company.id}`)}
                                 >
                                     <CardContent className="p-4">
                                         <div className="flex items-start justify-between gap-3">
-                                            <div className="flex items-start gap-3">
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                                            <div className="flex min-w-0 items-start gap-3">
+                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                                                     {company.logo_url ? (
                                                         <img
                                                             src={company.logo_url}
@@ -363,49 +363,49 @@ export function CompaniesPage() {
                                                         <Building2 className="h-5 w-5 text-primary" />
                                                     )}
                                                 </div>
-                                                <div className="flex-1">
+                                                <div className="min-w-0 flex-1">
                                                     <div className="flex flex-wrap items-center gap-2">
-                                                        <h3 className="font-semibold">{company.name}</h3>
+                                                        <h3 className="min-w-0 truncate font-semibold">{company.name}</h3>
                                                         {company.is_default && (
-                                                            <Badge variant="secondary" className="gap-1">
+                                                            <Badge variant="secondary" className="shrink-0 gap-1">
                                                                 <Star className="h-3 w-3" />
                                                                 Par défaut
                                                             </Badge>
                                                         )}
                                                         {company.is_owner && (
-                                                            <Badge className="gap-1 text-white">
+                                                            <Badge className="shrink-0 gap-1 text-white">
                                                                 <Crown className="h-3 w-3" />
                                                                 Propriétaire
                                                             </Badge>
                                                         )}
                                                     </div>
                                                     {company.legal_name && (
-                                                        <p className="text-sm text-muted-foreground">{company.legal_name}</p>
+                                                        <p className="truncate text-sm text-muted-foreground">{company.legal_name}</p>
                                                     )}
                                                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                                                         {company.email && (
-                                                            <span className="flex items-center gap-1">
-                                                                <Mail className="h-3 w-3" />
-                                                                {company.email}
+                                                            <span className="flex min-w-0 items-center gap-1">
+                                                                <Mail className="h-3 w-3 shrink-0" />
+                                                                <span className="truncate">{company.email}</span>
                                                             </span>
                                                         )}
                                                         {company.phone && (
                                                             <span className="flex items-center gap-1">
-                                                                <Phone className="h-3 w-3" />
+                                                                <Phone className="h-3 w-3 shrink-0" />
                                                                 {company.phone}
                                                             </span>
                                                         )}
                                                         {company.city && (
-                                                            <span className="flex items-center gap-1">
-                                                                <MapPin className="h-3 w-3" />
-                                                                {company.city}
+                                                            <span className="flex min-w-0 items-center gap-1">
+                                                                <MapPin className="h-3 w-3 shrink-0" />
+                                                                <span className="truncate">{company.city}</span>
                                                             </span>
                                                         )}
                                                     </div>
                                                 </div>
                                             </div>
                                             <div
-                                                className="flex items-center gap-1"
+                                                className="flex shrink-0 items-center gap-1"
                                                 onClick={(event) => event.stopPropagation()}
                                             >
                                                 {!company.is_default && (
@@ -441,15 +441,15 @@ export function CompaniesPage() {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="mt-3 flex items-center justify-between border-t pt-3">
+                                        <div className="mt-3 flex flex-col gap-2 border-t pt-3 sm:flex-row sm:items-center sm:justify-between">
                                             <Badge
                                                 variant={company.role === 'merchant_admin' || company.role === 'accountant' ? 'default' : 'secondary'}
-                                                className={company.role === 'merchant_admin' || company.role === 'accountant' ? 'text-white' : undefined}
+                                                className={company.role === 'merchant_admin' || company.role === 'accountant' ? 'w-fit text-white' : 'w-fit'}
                                             >
                                                 {getRoleLabel(company.role)}
                                             </Badge>
                                             {company.siren && (
-                                                <span className="text-xs text-muted-foreground">SIREN: {company.siren}</span>
+                                                <span className="min-w-0 truncate text-xs text-muted-foreground">SIREN: {company.siren}</span>
                                             )}
                                         </div>
                                     </CardContent>

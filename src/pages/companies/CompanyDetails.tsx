@@ -1201,17 +1201,18 @@ export function CompanyDetails() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3 sm:gap-4">
           <Button
             variant="ghost"
             size="icon"
+            className="shrink-0"
             onClick={() => navigate("/companies")}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="flex items-start gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary/10">
+          <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-primary/10">
               {company.logo_url ? (
                 <img
                   src={company.logo_url}
@@ -1222,26 +1223,26 @@ export function CompanyDetails() {
                 <Building2 className="h-8 w-8 text-primary" />
               )}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold">{company.name}</h1>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="min-w-0 break-words text-2xl font-bold">{company.name}</h1>
                 {company.is_default && (
-                  <Badge variant="secondary" className="gap-1">
+                  <Badge variant="secondary" className="shrink-0 gap-1">
                     <Star className="h-3 w-3" />
                     Par défaut
                   </Badge>
                 )}
                 {company.is_owner && (
-                  <Badge className="gap-1 text-white">
+                  <Badge className="shrink-0 gap-1 text-white">
                     <Crown className="h-3 w-3" />
                     Propriétaire
                   </Badge>
                 )}
               </div>
               {company.legal_name && (
-                <p className="text-muted-foreground">{company.legal_name}</p>
+                <p className="break-words text-muted-foreground">{company.legal_name}</p>
               )}
-              <div className="mt-1 flex items-center gap-2">
+              <div className="mt-1 flex flex-wrap items-center gap-2">
                 <Badge
                   variant={isAdmin ? "default" : "secondary"}
                   className={isAdmin ? "text-white" : undefined}
@@ -1257,7 +1258,7 @@ export function CompanyDetails() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           {!company.is_default && (
             <Button variant="outline" onClick={handleSetDefault}>
               <Star className="mr-2 h-4 w-4" />
@@ -1307,25 +1308,25 @@ export function CompanyDetails() {
         onValueChange={handleTabChange}
         className="space-y-6"
       >
-        <TabsList className="flex w-full">
-          <TabsTrigger value="general" className="flex-1 gap-2">
+        <TabsList className="h-auto w-full justify-start overflow-x-auto">
+          <TabsTrigger value="general" className="shrink-0 gap-2">
             <Building className="h-4 w-4" />
             Général
           </TabsTrigger>
-          <TabsTrigger value="contact" className="flex-1 gap-2">
+          <TabsTrigger value="contact" className="shrink-0 gap-2">
             <Phone className="h-4 w-4" />
             Contact
           </TabsTrigger>
-          <TabsTrigger value="banking" className="flex-1 gap-2">
+          <TabsTrigger value="banking" className="shrink-0 gap-2">
             <CreditCard className="h-4 w-4" />
             Bancaire
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex-1 gap-2">
+          <TabsTrigger value="settings" className="shrink-0 gap-2">
             <Settings className="h-4 w-4" />
             Paramètres
           </TabsTrigger>
           {canViewMembers && (
-            <TabsTrigger value="members" className="flex-1 gap-2">
+            <TabsTrigger value="members" className="shrink-0 gap-2">
               <Users className="h-4 w-4" />
               {membersTabLabel}
             </TabsTrigger>
@@ -1340,7 +1341,7 @@ export function CompanyDetails() {
           )}
           */}
           {company?.role === "merchant_admin" && (
-            <TabsTrigger value="accountant" className="flex-1 gap-2">
+            <TabsTrigger value="accountant" className="shrink-0 gap-2">
               <Calculator className="h-4 w-4" />
               Comptable
             </TabsTrigger>
@@ -1350,8 +1351,8 @@ export function CompanyDetails() {
         {/* Onglet Général */}
         <TabsContent value="general" className="space-y-6">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <CardTitle>Informations générales</CardTitle>
                 <CardDescription>
                   Les informations principales de votre entreprise
@@ -1373,14 +1374,14 @@ export function CompanyDetails() {
                 {editingSection === "general" ? (
                   <div className="space-y-4">
                     {generalForm.logo_url ? (
-                      <div className="flex items-center justify-between rounded-lg border p-4">
-                        <div className="flex items-center gap-4">
+                      <div className="flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 items-center gap-4">
                           <img
                             src={generalForm.logo_url}
                             alt={`Logo ${generalForm.name || company.name}`}
-                            className="h-16 w-16 rounded-lg border object-contain p-2"
+                            className="h-16 w-16 shrink-0 rounded-lg border object-contain p-2"
                           />
-                          <div>
+                          <div className="min-w-0">
                             <p className="font-medium">Logo actif</p>
                             <p className="text-sm text-muted-foreground">
                               Ce logo sera utilisé dans les devis, factures, PDF
@@ -1391,6 +1392,7 @@ export function CompanyDetails() {
                         <Button
                           type="button"
                           variant="outline"
+                          className="w-full sm:w-auto"
                           onClick={handleGeneralLogoRemoved}
                         >
                           Retirer le logo
@@ -1414,15 +1416,15 @@ export function CompanyDetails() {
                   </div>
                 ) : company.logo_url ? (
                   <div className="flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-20 w-20 items-center justify-center rounded-lg border bg-muted/20 p-3">
+                    <div className="flex min-w-0 items-center gap-4">
+                      <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border bg-muted/20 p-3">
                         <img
                           src={company.logo_url}
                           alt={`Logo ${company.name}`}
                           className="h-full w-full rounded-lg object-contain"
                         />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-medium">Logo configuré</p>
                         <p className="text-sm text-muted-foreground">
                           Utilisé sur les devis, factures, PDF et emails.
@@ -1432,6 +1434,7 @@ export function CompanyDetails() {
                     <Button
                       type="button"
                       variant="outline"
+                      className="w-full sm:w-auto"
                       onClick={() => setEditingSection("general")}
                       disabled={editingSection !== null}
                     >
@@ -1440,11 +1443,11 @@ export function CompanyDetails() {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-4 rounded-lg border border-dashed p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-20 w-20 items-center justify-center rounded-lg border bg-muted/20">
+                    <div className="flex min-w-0 items-center gap-4">
+                      <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border bg-muted/20">
                         <Building2 className="h-8 w-8 text-muted-foreground" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-medium">Aucun logo configuré</p>
                         <p className="text-sm text-muted-foreground">
                           Ajoutez un logo pour l’utiliser sur les devis, factures, PDF et emails.
@@ -1454,6 +1457,7 @@ export function CompanyDetails() {
                     <Button
                       type="button"
                       variant="outline"
+                      className="w-full sm:w-auto"
                       onClick={() => setEditingSection("general")}
                       disabled={editingSection !== null}
                     >
@@ -1463,7 +1467,7 @@ export function CompanyDetails() {
                 )}
               </div>
               <Separator />
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nom de l'entreprise</Label>
                   {editingSection === "general" ? (

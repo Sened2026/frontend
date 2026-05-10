@@ -505,12 +505,12 @@ export function ClientDetails() {
         <div className="space-y-6">
             {/* En-tête */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex items-start gap-4">
-                    <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+                <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+                    <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(-1)}>
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
-                    <div className="flex items-start gap-4">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-primary/10">
+                    <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                             {client.client_sector === 'public' ? (
                                 <Landmark className="h-7 w-7 text-primary" />
                             ) : client.type === 'professional' ? (
@@ -519,14 +519,14 @@ export function ClientDetails() {
                                 <User className="h-7 w-7 text-primary" />
                             )}
                         </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-2xl font-bold">{displayName}</h1>
-                                <Badge variant={client.type === 'professional' ? 'default' : 'secondary'}>
+                        <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <h1 className="min-w-0 break-words text-2xl font-bold">{displayName}</h1>
+                                <Badge variant={client.type === 'professional' ? 'default' : 'secondary'} className="shrink-0">
                                     {client.client_sector === 'public' ? 'Public' : client.type === 'professional' ? 'Pro' : 'Particulier'}
                                 </Badge>
                                 {client.chorus_pro_eligibility_status === 'eligible' && (
-                                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+                                    <Badge className="shrink-0 bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
                                         <CheckCircle2 className="mr-1 h-3 w-3" />
                                         Chorus Pro
                                     </Badge>
@@ -542,14 +542,14 @@ export function ClientDetails() {
                         </div>
                     </div>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" asChild>
+                <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
+                    <Button variant="outline" className="w-full sm:w-auto" asChild>
                         <Link to={`/quotes/new?client=${client.id}`}>
                             <FileText className="mr-2 h-4 w-4" />
                             Créer un devis
                         </Link>
                     </Button>
-                    <Button asChild>
+                    <Button className="w-full sm:w-auto" asChild>
                         <Link to={`/invoices/new?client=${client.id}`}>
                             <Receipt className="mr-2 h-4 w-4" />
                             Créer une facture
@@ -557,7 +557,7 @@ export function ClientDetails() {
                     </Button>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="icon">
+                            <Button variant="outline" size="icon" className="w-full sm:w-10">
                                 <Pencil className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
@@ -580,15 +580,15 @@ export function ClientDetails() {
 
             {/* Statistiques */}
             {stats && (
-                <div className="grid gap-4 md:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <Card>
                         <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                                <div>
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0">
                                     <p className="text-sm font-medium text-muted-foreground">Total facturé</p>
                                     <p className="text-2xl font-bold">{formatCurrency(stats.total_invoiced)}</p>
                                 </div>
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100">
                                     <Receipt className="h-5 w-5 text-blue-600" />
                                 </div>
                             </div>
@@ -596,12 +596,12 @@ export function ClientDetails() {
                     </Card>
                     <Card>
                         <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                                <div>
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0">
                                     <p className="text-sm font-medium text-muted-foreground">En attente</p>
                                     <p className="text-2xl font-bold text-yellow-600">{formatCurrency(stats.total_pending)}</p>
                                 </div>
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-100">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-100">
                                     <Clock className="h-5 w-5 text-yellow-600" />
                                 </div>
                             </div>
@@ -609,12 +609,12 @@ export function ClientDetails() {
                     </Card>
                     <Card>
                         <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                                <div>
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0">
                                     <p className="text-sm font-medium text-muted-foreground">En retard</p>
                                     <p className="text-2xl font-bold text-red-600">{formatCurrency(stats.total_overdue)}</p>
                                 </div>
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100">
                                     <AlertTriangle className="h-5 w-5 text-red-600" />
                                 </div>
                             </div>
@@ -622,12 +622,12 @@ export function ClientDetails() {
                     </Card>
                     <Card>
                         <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                                <div>
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0">
                                     <p className="text-sm font-medium text-muted-foreground">Documents</p>
                                     <p className="text-2xl font-bold">{stats.documents_count}</p>
                                 </div>
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100">
                                     <CheckCircle className="h-5 w-5 text-green-600" />
                                 </div>
                             </div>
@@ -640,7 +640,7 @@ export function ClientDetails() {
             {client.client_sector === 'public' && (
                 <Card>
                     <CardHeader>
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <CardTitle className="flex items-center gap-2">
                                 <Landmark className="h-5 w-5" />
                                 Chorus Pro
@@ -662,7 +662,7 @@ export function ClientDetails() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {/* Badge éligibilité */}
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                             {client.chorus_pro_eligibility_status === 'eligible' ? (
                                 <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
                                     <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
@@ -701,7 +701,7 @@ export function ClientDetails() {
                                         <span className="font-mono">{client.chorus_pro_code_destinataire}</span>
                                     </div>
                                 )}
-                                <div className="flex gap-4">
+                                <div className="flex flex-wrap gap-2">
                                     {client.chorus_pro_service_code_required && (
                                         <Badge variant="outline" className="text-xs">Code service requis</Badge>
                                     )}
@@ -729,9 +729,9 @@ export function ClientDetails() {
                 </Card>
             )}
 
-            <div className="grid gap-6 lg:grid-cols-3">
+            <div className="grid min-w-0 gap-6 lg:grid-cols-3">
                 {/* Informations de contact */}
-                <Card>
+                <Card className="min-w-0">
                     <CardHeader>
                         <CardTitle>Informations de contact</CardTitle>
                     </CardHeader>
@@ -739,9 +739,9 @@ export function ClientDetails() {
                         {client.email && (
                             <div className="flex items-start gap-3">
                                 <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
-                                <div>
+                                <div className="min-w-0">
                                     <p className="text-sm font-medium text-muted-foreground">Email</p>
-                                    <a href={`mailto:${client.email}`} className="text-primary hover:underline">
+                                    <a href={`mailto:${client.email}`} className="break-words text-primary hover:underline">
                                         {client.email}
                                     </a>
                                 </div>
@@ -761,9 +761,9 @@ export function ClientDetails() {
                         {(client.address || client.city) && (
                             <div className="flex items-start gap-3">
                                 <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
-                                <div>
+                                <div className="min-w-0">
                                     <p className="text-sm font-medium text-muted-foreground">Adresse</p>
-                                    <p>
+                                    <p className="break-words">
                                         {[
                                             client.address,
                                             [client.postal_code, client.city].filter(Boolean).join(' '),
@@ -786,13 +786,13 @@ export function ClientDetails() {
                 </Card>
 
                 {/* Historique des documents */}
-                <Card className="lg:col-span-2">
+                <Card className="min-w-0 overflow-hidden lg:col-span-2">
                     <CardHeader>
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <CardTitle>Historique des documents</CardTitle>
-                            <div className="flex gap-2">
+                            <div className="grid grid-cols-1 gap-2 sm:flex">
                                 <Select value={typeFilter} onValueChange={setTypeFilter}>
-                                    <SelectTrigger className="w-[140px]">
+                                    <SelectTrigger className="w-full sm:w-[140px]">
                                         <Filter className="mr-2 h-4 w-4" />
                                         <SelectValue placeholder="Type" />
                                     </SelectTrigger>
@@ -804,7 +804,7 @@ export function ClientDetails() {
                                     </SelectContent>
                                 </Select>
                                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                    <SelectTrigger className="w-[140px]">
+                                    <SelectTrigger className="w-full sm:w-[140px]">
                                         <Filter className="mr-2 h-4 w-4" />
                                         <SelectValue placeholder="Statut" />
                                     </SelectTrigger>
@@ -827,7 +827,7 @@ export function ClientDetails() {
                                 <p className="text-muted-foreground">Aucun document trouvé</p>
                             </div>
                         ) : (
-                            <Table>
+                            <Table className="min-w-[560px]">
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Numéro</TableHead>
@@ -871,9 +871,10 @@ export function ClientDetails() {
                         
                         {/* Bouton centré en bas */}
                         {billingDocuments.length > 0 && (
-                            <div className="flex justify-center py-4 border-t">
+                            <div className="flex justify-center border-t px-4 py-4">
                                 <Button 
                                     variant="outline" 
+                                    className="w-full sm:w-auto"
                                     onClick={() => {
                                         setModalPage(1);
                                         setInvoicesModalOpen(true);
@@ -889,17 +890,17 @@ export function ClientDetails() {
             </div>
 
             {/* Historique des relances */}
-            <Card>
+            <Card className="min-w-0 overflow-hidden">
                 <CardHeader>
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <CardTitle className="flex items-center gap-2">
                             <Bell className="h-5 w-5" />
                             Historique des relances
                         </CardTitle>
-                        <div className="flex items-center gap-2">
+                        <div className="grid grid-cols-1 gap-2 sm:flex sm:items-center">
                             <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
                             <Select value={reminderSort} onValueChange={(v) => setReminderSort(v as 'desc' | 'asc')}>
-                                <SelectTrigger className="w-[180px]">
+                                <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -917,7 +918,7 @@ export function ClientDetails() {
                             <p className="text-muted-foreground">Aucune relance pour ce client</p>
                         </div>
                     ) : (
-                        <Table>
+                        <Table className="min-w-[560px]">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Date</TableHead>
@@ -992,7 +993,7 @@ export function ClientDetails() {
                                 <p className="text-muted-foreground">Aucun document de facturation pour ce client</p>
                             </div>
                         ) : (
-                            <Table>
+                            <Table className="min-w-[560px]">
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Numéro</TableHead>

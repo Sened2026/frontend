@@ -269,21 +269,21 @@ export function SettingsPage() {
 
     return (
         <div className="mx-auto max-w-4xl space-y-6">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
                     <h1 className="text-2xl font-bold">Paramètres</h1>
                     <p className="text-muted-foreground">Gérez votre compte et vos préférences</p>
                 </div>
-                <div className="space-y-2 text-right">
+                <div className="w-full space-y-2 text-left sm:w-auto sm:text-right">
                     {canOpenLegalDocuments ? (
-                        <Button asChild variant="outline">
+                        <Button asChild variant="outline" className="w-full whitespace-normal sm:w-auto">
                             <Link to="/settings/legal-documents">
                                 <Shield className="mr-2 h-4 w-4" />
                                 Documents légaux de l’entreprise
                             </Link>
                         </Button>
                     ) : (
-                        <Button variant="outline" disabled>
+                        <Button variant="outline" className="w-full whitespace-normal sm:w-auto" disabled>
                             <Shield className="mr-2 h-4 w-4" />
                             Documents légaux de l’entreprise
                         </Button>
@@ -297,7 +297,7 @@ export function SettingsPage() {
             </div>
 
             <Tabs defaultValue="profile" className="space-y-6">
-                <TabsList className={`grid w-full max-w-md ${canShowSubscriptionTab ? 'grid-cols-4' : 'grid-cols-3'}`}>
+                    <TabsList className={`grid w-full max-w-md ${canShowSubscriptionTab ? 'grid-cols-4' : 'grid-cols-3'}`}>
                     <TabsTrigger value="profile" className="gap-2">
                         <User className="h-4 w-4" />
                         <span className="hidden sm:inline">Profil</span>
@@ -412,8 +412,8 @@ export function SettingsPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="mb-6 rounded-lg border bg-muted/50 p-4 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <div>
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="min-w-0">
                                             <p className="font-medium">
                                                 Plan actuel : {subscription?.plan?.name || 'Aucun'}
                                                 {subscription?.billing_period && (
@@ -484,7 +484,7 @@ export function SettingsPage() {
 
                                 {canManageBilling ? (
                                     <>
-                                        <div className="mb-4 flex items-center justify-between">
+                                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                             <h3 className="font-medium">Plans disponibles</h3>
                                             <div className="inline-flex items-center rounded-lg border bg-muted p-1">
                                                 <button

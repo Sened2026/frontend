@@ -546,25 +546,25 @@ export function InvoiceDetails() {
     return (
         <div className="space-y-6">
             {/* En-tête compact */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+                    <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(-1)}>
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-2xl font-bold">{invoice.invoice_number}</h1>
-                            <Badge className={statusColors[invoice.status]}>
+                    <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <h1 className="min-w-0 break-words text-2xl font-bold">{invoice.invoice_number}</h1>
+                            <Badge className={`${statusColors[invoice.status]} shrink-0`}>
                                 <StatusIcon className="mr-1 h-3 w-3" />
                                 {statusLabels[invoice.status]}
                             </Badge>
                             {invoice.type !== 'invoice' && (
-                                <Badge variant="outline">
+                                <Badge variant="outline" className="shrink-0">
                                     {invoice.type === 'deposit' ? 'Acompte' : 'Avoir'}
                                 </Badge>
                             )}
                         </div>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="break-words text-sm text-muted-foreground">
                             {invoice.client?.company_name || `${invoice.client?.first_name} ${invoice.client?.last_name}`}
                         </p>
                         {invoice.has_credit_note && invoice.linked_credit_note_id && (
@@ -572,7 +572,7 @@ export function InvoiceDetails() {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className="border-orange-200 text-orange-700 hover:text-orange-800"
+                                    className="w-full border-orange-200 text-orange-700 hover:text-orange-800 sm:w-auto"
                                     onClick={() => navigate(`/credit-notes/${invoice.linked_credit_note_id}`)}
                                 >
                                     <FileMinus className="mr-2 h-4 w-4" />
@@ -585,32 +585,32 @@ export function InvoiceDetails() {
                 </div>
                 
                 {/* Actions groupées */}
-                <div className="flex items-center gap-2">
+                <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
                     {invoice.status === 'draft' && permissions.canEditInvoice && (
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/invoices/${invoice.id}/edit`)}>
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => navigate(`/invoices/${invoice.id}/edit`)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Modifier
                         </Button>
                     )}
                     {['draft', 'sent'].includes(invoice.status) && permissions.canSendInvoice && (
-                        <Button size="sm" onClick={() => setSendDialogOpen(true)}>
+                        <Button size="sm" className="w-full sm:w-auto" onClick={() => setSendDialogOpen(true)}>
                             <Send className="mr-2 h-4 w-4" />
                             {invoice.status === 'draft' ? 'Envoyer' : 'Renvoyer'}
                         </Button>
                     )}
                     {['sent', 'overdue'].includes(invoice.status) && permissions.canEditInvoice && (
                         <>
-                            <Button size="sm" onClick={() => navigate(`/invoices/${invoice.id}/payment`)}>
+                            <Button size="sm" className="w-full sm:w-auto" onClick={() => navigate(`/invoices/${invoice.id}/payment`)}>
                                 <Banknote className="mr-2 h-4 w-4" />
                                 Paiement
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => setMarkPaidDialogOpen(true)}>
+                            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setMarkPaidDialogOpen(true)}>
                                 <Coins className="mr-2 h-4 w-4" />
                                 Espèces
                             </Button>
                         </>
                     )}
-                    <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleDownloadPdf}>
                         <Download className="mr-2 h-4 w-4" />
                         PDF
                     </Button>
@@ -618,7 +618,7 @@ export function InvoiceDetails() {
                     {/* Menu actions supplémentaires */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="icon">
+                            <Button variant="outline" size="icon" className="w-full sm:w-10">
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
@@ -692,11 +692,11 @@ export function InvoiceDetails() {
             </div>
 
 
-            <div className="grid gap-6 lg:grid-cols-3">
+            <div className="grid min-w-0 gap-6 lg:grid-cols-3">
                 {/* Informations client et facture */}
-                <div className="space-y-6 lg:col-span-2">
+                <div className="min-w-0 space-y-6 lg:col-span-2">
                     {/* Client */}
-                    <Card>
+                    <Card className="min-w-0">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Building className="h-5 w-5" />
@@ -706,28 +706,30 @@ export function InvoiceDetails() {
                         <CardContent>
                             {invoice.client && (
                                 <div className="space-y-2">
-                                    <p className="font-medium">
+                                    <p className="break-words font-medium">
                                         {invoice.client.company_name || 
                                          `${invoice.client.first_name} ${invoice.client.last_name}`}
                                     </p>
                                     {invoice.client.email && (
-                                        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <Mail className="h-4 w-4" />
-                                            {invoice.client.email}
+                                        <p className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+                                            <Mail className="h-4 w-4 shrink-0" />
+                                            <span className="break-all">{invoice.client.email}</span>
                                         </p>
                                     )}
                                     {invoice.client.phone && (
                                         <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <Phone className="h-4 w-4" />
+                                            <Phone className="h-4 w-4 shrink-0" />
                                             {invoice.client.phone}
                                         </p>
                                     )}
                                     {invoice.client.address && (
-                                        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <MapPin className="h-4 w-4" />
-                                            {invoice.client.address}
-                                            {invoice.client.postal_code && `, ${invoice.client.postal_code}`}
-                                            {invoice.client.city && ` ${invoice.client.city}`}
+                                        <p className="flex min-w-0 items-start gap-2 text-sm text-muted-foreground">
+                                            <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                                            <span className="break-words">
+                                                {invoice.client.address}
+                                                {invoice.client.postal_code && `, ${invoice.client.postal_code}`}
+                                                {invoice.client.city && ` ${invoice.client.city}`}
+                                            </span>
                                         </p>
                                     )}
                                 </div>
@@ -736,12 +738,12 @@ export function InvoiceDetails() {
                     </Card>
 
                     {/* Articles */}
-                    <Card>
+                    <Card className="min-w-0 overflow-hidden">
                         <CardHeader>
                             <CardTitle>Articles</CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
-                            <Table>
+                            <Table className="min-w-[560px]">
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Description</TableHead>
@@ -759,7 +761,7 @@ export function InvoiceDetails() {
                                                 const item = row.item;
                                                 return (
                                                     <TableRow key={item.id || row.index}>
-                                                        <TableCell>{item.description}</TableCell>
+                                                        <TableCell className="min-w-[140px] break-words">{item.description}</TableCell>
                                                         <TableCell className="text-right">{item.quantity}</TableCell>
                                                         <TableCell className="text-right">{formatCurrency(item.unit_price)}</TableCell>
                                                         <TableCell className="text-right">{item.vat_rate}%</TableCell>
@@ -772,7 +774,7 @@ export function InvoiceDetails() {
                                             return (
                                                 <React.Fragment key={`group-${row.productId}-${row.startIndex}`}>
                                                     <TableRow className="bg-muted/50">
-                                                        <TableCell colSpan={5} className="font-medium">
+                                                        <TableCell colSpan={5} className="break-words font-medium">
                                                             {row.productName}
                                                         </TableCell>
                                                     </TableRow>
@@ -780,7 +782,7 @@ export function InvoiceDetails() {
                                                         const item = gi.item;
                                                         return (
                                                             <TableRow key={item.id || gi.index} className="bg-muted/30">
-                                                                <TableCell className="pl-6">{item.description}</TableCell>
+                                                                <TableCell className="min-w-[140px] break-words pl-6">{item.description}</TableCell>
                                                                 <TableCell className="text-right">{item.quantity}</TableCell>
                                                                 <TableCell className="text-right">{formatCurrency(item.unit_price)}</TableCell>
                                                                 <TableCell className="text-right">{item.vat_rate}%</TableCell>
@@ -801,7 +803,7 @@ export function InvoiceDetails() {
 
                     {/* Historique des paiements */}
                     {payments.length > 0 && (
-                        <Card>
+                        <Card className="min-w-0 overflow-hidden">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <Banknote className="h-5 w-5" />
@@ -809,7 +811,7 @@ export function InvoiceDetails() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-0">
-                                <Table>
+                                <Table className="min-w-[560px]">
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Date</TableHead>
@@ -873,9 +875,9 @@ export function InvoiceDetails() {
                 </div>
 
                 {/* Colonne droite: Totaux et paiement */}
-                <div className="space-y-6">
+                <div className="min-w-0 space-y-6">
                     {/* Dates et Relance */}
-                    <Card>
+                    <Card className="min-w-0">
                         <CardHeader className="pb-3">
                             <CardTitle className="flex items-center gap-2">
                                 <Clock className="h-5 w-5" />
@@ -883,26 +885,26 @@ export function InvoiceDetails() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Date d'émission</span>
-                                <span>{formatDate(invoice.issue_date)}</span>
+                            <div className="flex items-start justify-between gap-3 text-sm">
+                                <span className="min-w-0 text-muted-foreground">Date d'émission</span>
+                                <span className="shrink-0 text-right">{formatDate(invoice.issue_date)}</span>
                             </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Date d'échéance</span>
-                                <span className={invoice.status === 'overdue' ? 'text-red-600 font-medium' : ''}>
+                            <div className="flex items-start justify-between gap-3 text-sm">
+                                <span className="min-w-0 text-muted-foreground">Date d'échéance</span>
+                                <span className={`${invoice.status === 'overdue' ? 'text-red-600 font-medium' : ''} shrink-0 text-right`}>
                                     {formatDate(invoice.due_date)}
                                 </span>
                             </div>
                             {invoice.sent_at && (
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Envoyée le</span>
-                                    <span>{formatDate(invoice.sent_at)}</span>
+                                <div className="flex items-start justify-between gap-3 text-sm">
+                                    <span className="min-w-0 text-muted-foreground">Envoyée le</span>
+                                    <span className="shrink-0 text-right">{formatDate(invoice.sent_at)}</span>
                                 </div>
                             )}
                             {invoice.paid_at && (
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Payée le</span>
-                                    <span>{formatDate(invoice.paid_at)}</span>
+                                <div className="flex items-start justify-between gap-3 text-sm">
+                                    <span className="min-w-0 text-muted-foreground">Payée le</span>
+                                    <span className="shrink-0 text-right">{formatDate(invoice.paid_at)}</span>
                                 </div>
                             )}
                             
@@ -924,7 +926,7 @@ export function InvoiceDetails() {
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    <Card className="min-w-0">
                         <CardHeader className="pb-3">
                             <CardTitle className="flex items-center gap-2">
                                 <Bell className="h-5 w-5" />
@@ -933,13 +935,13 @@ export function InvoiceDetails() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="rounded-lg border bg-muted/20 p-3">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">Total</span>
-                                    <span className="font-semibold">{sentReminders.length}</span>
+                                <div className="flex items-center justify-between gap-3 text-sm">
+                                    <span className="min-w-0 text-muted-foreground">Total</span>
+                                    <span className="shrink-0 text-right font-semibold">{sentReminders.length}</span>
                                 </div>
-                                <div className="mt-2 flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">Dernière relance</span>
-                                    <span>{lastReminder ? formatDateTime(lastReminder.sent_at || lastReminder.created_at) : 'Aucune'}</span>
+                                <div className="mt-2 flex items-center justify-between gap-3 text-sm">
+                                    <span className="min-w-0 text-muted-foreground">Dernière relance</span>
+                                    <span className="shrink-0 text-right">{lastReminder ? formatDateTime(lastReminder.sent_at || lastReminder.created_at) : 'Aucune'}</span>
                                 </div>
                             </div>
 
@@ -949,14 +951,14 @@ export function InvoiceDetails() {
                                 <div className="space-y-3">
                                     {sentReminders.map((reminder) => (
                                         <div key={reminder.id} className="rounded-lg border p-3">
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div>
+                                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                                <div className="min-w-0">
                                                     <p className="text-sm font-medium">{reminderTypeLabel(reminder)}</p>
                                                     <p className="text-xs text-muted-foreground">
                                                         {formatDateTime(reminder.sent_at || reminder.created_at)}
                                                     </p>
                                                 </div>
-                                                <div className="flex gap-2">
+                                                <div className="flex flex-wrap gap-2">
                                                     <Badge variant="outline">
                                                         {reminderChannelLabel(reminder.channel)}
                                                     </Badge>
@@ -973,31 +975,31 @@ export function InvoiceDetails() {
                     </Card>
 
                     {/* Totaux */}
-                    <Card>
+                    <Card className="min-w-0">
                         <CardHeader>
                             <CardTitle>Récapitulatif</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Sous-total HT</span>
-                                <span>{formatCurrency(invoice.subtotal)}</span>
+                            <div className="flex items-start justify-between gap-3 text-sm">
+                                <span className="min-w-0 text-muted-foreground">Sous-total HT</span>
+                                <span className="shrink-0 text-right">{formatCurrency(invoice.subtotal)}</span>
                             </div>
                             {invoice.discount_amount && invoice.discount_amount > 0 && (
-                                <div className="flex justify-between text-sm text-green-600">
-                                    <span>Remise {invoice.discount_type === 'percentage' ? `(${invoice.discount_value}%)` : ''}</span>
-                                    <span>-{formatCurrency(invoice.discount_amount)}</span>
+                                <div className="flex items-start justify-between gap-3 text-sm text-green-600">
+                                    <span className="min-w-0">Remise {invoice.discount_type === 'percentage' ? `(${invoice.discount_value}%)` : ''}</span>
+                                    <span className="shrink-0 text-right">-{formatCurrency(invoice.discount_amount)}</span>
                                 </div>
                             )}
                             {!invoice.company?.is_vat_exempt && (
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">TVA</span>
-                                <span>{formatCurrency(invoice.total_vat)}</span>
+                            <div className="flex items-start justify-between gap-3 text-sm">
+                                <span className="min-w-0 text-muted-foreground">TVA</span>
+                                <span className="shrink-0 text-right">{formatCurrency(invoice.total_vat)}</span>
                             </div>
                             )}
                             <Separator />
-                            <div className="flex justify-between font-bold text-lg">
-                                <span>{invoice.company?.is_vat_exempt ? 'Total HT' : 'Total TTC'}</span>
-                                <span>{formatCurrency(invoice.total)}</span>
+                            <div className="flex items-start justify-between gap-3 text-lg font-bold">
+                                <span className="min-w-0">{invoice.company?.is_vat_exempt ? 'Total HT' : 'Total TTC'}</span>
+                                <span className="shrink-0 text-right">{formatCurrency(invoice.total)}</span>
                             </div>
                             {invoice.company?.is_vat_exempt && (
                                 <p className="text-xs text-muted-foreground">
@@ -1009,7 +1011,7 @@ export function InvoiceDetails() {
 
                     {/* Progression du paiement */}
                     {invoice.status !== 'draft' && invoice.status !== 'cancelled' && (
-                        <Card>
+                        <Card className="min-w-0">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <Euro className="h-5 w-5" />
@@ -1018,22 +1020,22 @@ export function InvoiceDetails() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span>Progression</span>
-                                        <span>{Math.round(paymentProgress)}%</span>
+                                    <div className="flex items-start justify-between gap-3 text-sm">
+                                        <span className="min-w-0">Progression</span>
+                                        <span className="shrink-0 text-right">{Math.round(paymentProgress)}%</span>
                                     </div>
                                     <Progress value={paymentProgress} className="h-2" />
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Payé</span>
-                                    <span className="text-green-600 font-medium">
+                                <div className="flex items-start justify-between gap-3 text-sm">
+                                    <span className="min-w-0 text-muted-foreground">Payé</span>
+                                    <span className="shrink-0 text-right font-medium text-green-600">
                                         {formatCurrency(invoice.amount_paid)}
                                     </span>
                                 </div>
                                 {remainingAmount > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">Reste à payer</span>
-                                        <span className="text-orange-600 font-medium">
+                                    <div className="flex items-start justify-between gap-3 text-sm">
+                                        <span className="min-w-0 text-muted-foreground">Reste à payer</span>
+                                        <span className="shrink-0 text-right font-medium text-orange-600">
                                             {formatCurrency(remainingAmount)}
                                         </span>
                                     </div>
@@ -1044,7 +1046,7 @@ export function InvoiceDetails() {
 
                     {/* Chorus Pro Status */}
                     {chorusSubmission && (
-                        <Card className="border-blue-200">
+                        <Card className="min-w-0 border-blue-200">
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-sm">
                                     <Send className="h-4 w-4" />
@@ -1052,27 +1054,27 @@ export function InvoiceDetails() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-muted-foreground">Statut</span>
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="min-w-0 text-sm text-muted-foreground">Statut</span>
                                     <Badge className={getChorusStatusBadge(chorusSubmission.statut_chorus) || ''}>
                                         {chorusSubmission.statut_chorus ? getChorusStatusLabel(chorusSubmission.statut_chorus) : 'Inconnu'}
                                     </Badge>
                                 </div>
                                 {chorusSubmission.identifiant_facture_cpp && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">ID CPP</span>
-                                        <span className="font-mono">{chorusSubmission.identifiant_facture_cpp}</span>
+                                    <div className="flex items-start justify-between gap-3 text-sm">
+                                        <span className="min-w-0 text-muted-foreground">ID CPP</span>
+                                        <span className="break-all text-right font-mono">{chorusSubmission.identifiant_facture_cpp}</span>
                                     </div>
                                 )}
                                 {chorusSubmission.numero_facture_chorus && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">N° Chorus</span>
-                                        <span className="font-mono">{chorusSubmission.numero_facture_chorus}</span>
+                                    <div className="flex items-start justify-between gap-3 text-sm">
+                                        <span className="min-w-0 text-muted-foreground">N° Chorus</span>
+                                        <span className="break-all text-right font-mono">{chorusSubmission.numero_facture_chorus}</span>
                                     </div>
                                 )}
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Envoyée le</span>
-                                    <span>{new Date(chorusSubmission.submitted_at).toLocaleDateString('fr-FR')}</span>
+                                <div className="flex items-start justify-between gap-3 text-sm">
+                                    <span className="min-w-0 text-muted-foreground">Envoyée le</span>
+                                    <span className="shrink-0 text-right">{new Date(chorusSubmission.submitted_at).toLocaleDateString('fr-FR')}</span>
                                 </div>
                                 {chorusSubmission.error_message && (
                                     <div className="rounded bg-red-50 p-2 text-xs text-red-700">

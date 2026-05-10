@@ -304,14 +304,14 @@ export function QuoteDetails() {
         <div className="mx-auto max-w-5xl space-y-6">
             {/* En-tête */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+                <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+                    <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(-1)}>
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-2xl font-bold">{quote.quote_number}</h1>
-                            <Badge className={statusColors[quote.status]}>
+                    <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <h1 className="min-w-0 break-words text-2xl font-bold">{quote.quote_number}</h1>
+                            <Badge className={`${statusColors[quote.status]} shrink-0`}>
                                 <StatusIcon className="mr-1 h-3 w-3" />
                                 {statusLabels[quote.status]}
                             </Badge>
@@ -321,45 +321,45 @@ export function QuoteDetails() {
                         </p>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
                     {quote.status === 'draft' && permissions.canEditQuote && (
                         <>
-                            <Button variant="outline" onClick={() => navigate(`/quotes/${quote.id}/edit`)}>
+                            <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate(`/quotes/${quote.id}/edit`)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Modifier
                             </Button>
                         </>
                     )}
                     {quote.status === 'draft' && permissions.canSendQuote && (
-                        <Button onClick={() => setSendDialogOpen(true)}>
+                        <Button className="w-full sm:w-auto" onClick={() => setSendDialogOpen(true)}>
                             <Send className="mr-2 h-4 w-4" />
                             Envoyer
                         </Button>
                     )}
                     {['accepted', 'signed'].includes(quote.status) && permissions.canCreateInvoice && (
-                        <Button onClick={() => setConvertDialogOpen(true)}>
+                        <Button className="w-full sm:w-auto" onClick={() => setConvertDialogOpen(true)}>
                             <FileText className="mr-2 h-4 w-4" />
                             Convertir en facture
                         </Button>
                     )}
                     {permissions.canCreateQuote && (
-                        <Button variant="outline" onClick={handleDuplicate}>
+                        <Button variant="outline" className="w-full sm:w-auto" onClick={handleDuplicate}>
                             <Copy className="mr-2 h-4 w-4" />
                             Dupliquer
                         </Button>
                     )}
-                    <Button variant="outline" onClick={handleDownloadPdf}>
+                    <Button variant="outline" className="w-full sm:w-auto" onClick={handleDownloadPdf}>
                         <Download className="mr-2 h-4 w-4" />
                         PDF
                     </Button>
                 </div>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-3">
+            <div className="grid min-w-0 gap-6 lg:grid-cols-3">
                 {/* Informations client et devis */}
-                <div className="space-y-6 lg:col-span-2">
+                <div className="min-w-0 space-y-6 lg:col-span-2">
                     {/* Client */}
-                    <Card>
+                    <Card className="min-w-0">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Building className="h-5 w-5" />
@@ -369,28 +369,30 @@ export function QuoteDetails() {
                         <CardContent>
                             {quote.client && (
                                 <div className="space-y-2">
-                                    <p className="font-medium">
+                                    <p className="break-words font-medium">
                                         {quote.client.company_name || 
                                          `${quote.client.first_name} ${quote.client.last_name}`}
                                     </p>
                                     {quote.client.email && (
-                                        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <Mail className="h-4 w-4" />
-                                            {quote.client.email}
+                                        <p className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+                                            <Mail className="h-4 w-4 shrink-0" />
+                                            <span className="break-all">{quote.client.email}</span>
                                         </p>
                                     )}
                                     {quote.client.phone && (
                                         <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <Phone className="h-4 w-4" />
+                                            <Phone className="h-4 w-4 shrink-0" />
                                             {quote.client.phone}
                                         </p>
                                     )}
                                     {quote.client.address && (
-                                        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <MapPin className="h-4 w-4" />
-                                            {quote.client.address}
-                                            {quote.client.postal_code && `, ${quote.client.postal_code}`}
-                                            {quote.client.city && ` ${quote.client.city}`}
+                                        <p className="flex min-w-0 items-start gap-2 text-sm text-muted-foreground">
+                                            <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                                            <span className="break-words">
+                                                {quote.client.address}
+                                                {quote.client.postal_code && `, ${quote.client.postal_code}`}
+                                                {quote.client.city && ` ${quote.client.city}`}
+                                            </span>
                                         </p>
                                     )}
                                 </div>
@@ -399,12 +401,12 @@ export function QuoteDetails() {
                     </Card>
 
                     {/* Articles */}
-                    <Card>
+                    <Card className="min-w-0 overflow-hidden">
                         <CardHeader>
                             <CardTitle>Articles</CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
-                            <Table>
+                            <Table className="min-w-[560px]">
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Description</TableHead>
@@ -422,7 +424,7 @@ export function QuoteDetails() {
                                                 const item = row.item;
                                                 return (
                                                     <TableRow key={item.id || row.index}>
-                                                        <TableCell>{item.description}</TableCell>
+                                                        <TableCell className="min-w-[140px] break-words">{item.description}</TableCell>
                                                         <TableCell className="text-right">{item.quantity}</TableCell>
                                                         <TableCell className="text-right">{formatCurrency(item.unit_price)}</TableCell>
                                                         <TableCell className="text-right">{item.vat_rate}%</TableCell>
@@ -435,7 +437,7 @@ export function QuoteDetails() {
                                             return (
                                                 <React.Fragment key={`group-${row.productId}-${row.startIndex}`}>
                                                     <TableRow className="bg-muted/50">
-                                                        <TableCell colSpan={5} className="font-medium">
+                                                        <TableCell colSpan={5} className="break-words font-medium">
                                                             {row.productName}
                                                         </TableCell>
                                                     </TableRow>
@@ -443,7 +445,7 @@ export function QuoteDetails() {
                                                         const item = gi.item;
                                                         return (
                                                             <TableRow key={item.id || gi.index} className="bg-muted/30">
-                                                                <TableCell className="pl-6">{item.description}</TableCell>
+                                                                <TableCell className="min-w-[140px] break-words pl-6">{item.description}</TableCell>
                                                                 <TableCell className="text-right">{item.quantity}</TableCell>
                                                                 <TableCell className="text-right">{formatCurrency(item.unit_price)}</TableCell>
                                                                 <TableCell className="text-right">{item.vat_rate}%</TableCell>
@@ -464,7 +466,7 @@ export function QuoteDetails() {
 
                     {/* Notes et conditions */}
                     {(quote.notes || quote.terms_and_conditions || quote.status === 'draft') && (
-                        <Card>
+                        <Card className="min-w-0">
                             <CardHeader>
                                 <CardTitle>Notes et conditions</CardTitle>
                             </CardHeader>
@@ -507,9 +509,9 @@ export function QuoteDetails() {
                 </div>
 
                 {/* Colonne droite: Totaux et informations */}
-                <div className="space-y-6">
+                <div className="min-w-0 space-y-6">
                     {/* Dates */}
-                    <Card>
+                    <Card className="min-w-0">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Clock className="h-5 w-5" />
@@ -517,25 +519,25 @@ export function QuoteDetails() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Date d'émission</span>
-                                <span>{formatDate(quote.issue_date)}</span>
+                            <div className="flex items-start justify-between gap-3 text-sm">
+                                <span className="min-w-0 text-muted-foreground">Date d'émission</span>
+                                <span className="shrink-0 text-right">{formatDate(quote.issue_date)}</span>
                             </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Valide jusqu'au</span>
-                                <span>{formatDate(quote.validity_date)}</span>
+                            <div className="flex items-start justify-between gap-3 text-sm">
+                                <span className="min-w-0 text-muted-foreground">Valide jusqu'au</span>
+                                <span className="shrink-0 text-right">{formatDate(quote.validity_date)}</span>
                             </div>
                             {quote.signed_at && (
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Signé le</span>
-                                    <span>{formatDate(quote.signed_at)}</span>
+                                <div className="flex items-start justify-between gap-3 text-sm">
+                                    <span className="min-w-0 text-muted-foreground">Signé le</span>
+                                    <span className="shrink-0 text-right">{formatDate(quote.signed_at)}</span>
                                 </div>
                             )}
                         </CardContent>
                     </Card>
 
                     {hasLegacySignatureArtifacts && (
-                        <Card>
+                        <Card className="min-w-0">
                             <CardHeader>
                                 <CardTitle>Documents de signature</CardTitle>
                             </CardHeader>
@@ -577,31 +579,31 @@ export function QuoteDetails() {
                     )}
 
                     {/* Totaux */}
-                    <Card>
+                    <Card className="min-w-0">
                         <CardHeader>
                             <CardTitle>Récapitulatif</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Sous-total HT</span>
-                                <span>{formatCurrency(quote.subtotal)}</span>
+                            <div className="flex items-start justify-between gap-3 text-sm">
+                                <span className="min-w-0 text-muted-foreground">Sous-total HT</span>
+                                <span className="shrink-0 text-right">{formatCurrency(quote.subtotal)}</span>
                             </div>
                             {quote.discount_amount && quote.discount_amount > 0 && (
-                                <div className="flex justify-between text-sm text-green-600">
-                                    <span>Remise {quote.discount_type === 'percentage' ? `(${quote.discount_value}%)` : ''}</span>
-                                    <span>-{formatCurrency(quote.discount_amount)}</span>
+                                <div className="flex items-start justify-between gap-3 text-sm text-green-600">
+                                    <span className="min-w-0">Remise {quote.discount_type === 'percentage' ? `(${quote.discount_value}%)` : ''}</span>
+                                    <span className="shrink-0 text-right">-{formatCurrency(quote.discount_amount)}</span>
                                 </div>
                             )}
                             {!quote.company?.is_vat_exempt && (
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">TVA</span>
-                                <span>{formatCurrency(quote.total_vat)}</span>
+                            <div className="flex items-start justify-between gap-3 text-sm">
+                                <span className="min-w-0 text-muted-foreground">TVA</span>
+                                <span className="shrink-0 text-right">{formatCurrency(quote.total_vat)}</span>
                             </div>
                             )}
                             <Separator />
-                            <div className="flex justify-between font-bold text-lg">
-                                <span>{quote.company?.is_vat_exempt ? 'Total HT' : 'Total TTC'}</span>
-                                <span>{formatCurrency(quote.total)}</span>
+                            <div className="flex items-start justify-between gap-3 text-lg font-bold">
+                                <span className="min-w-0">{quote.company?.is_vat_exempt ? 'Total HT' : 'Total TTC'}</span>
+                                <span className="shrink-0 text-right">{formatCurrency(quote.total)}</span>
                             </div>
                             {quote.company?.is_vat_exempt && (
                                 <p className="text-xs text-muted-foreground">
@@ -613,7 +615,7 @@ export function QuoteDetails() {
 
                     {/* Signature si refusé */}
                     {quote.status === 'refused' && quote.refusal_reason && (
-                        <Card className="border-red-200 bg-red-50">
+                        <Card className="min-w-0 border-red-200 bg-red-50">
                             <CardHeader>
                                 <CardTitle className="text-red-800 flex items-center gap-2">
                                     <XCircle className="h-5 w-5" />
@@ -628,7 +630,7 @@ export function QuoteDetails() {
 
                     {/* Signature si accepté */}
                     {['accepted', 'signed'].includes(quote.status) && quote.signed_at && (
-                        <Card className="border-green-200 bg-green-50">
+                        <Card className="min-w-0 border-green-200 bg-green-50">
                             <CardHeader>
                                 <CardTitle className="text-green-800 flex items-center gap-2">
                                     <CheckCircle className="h-5 w-5" />

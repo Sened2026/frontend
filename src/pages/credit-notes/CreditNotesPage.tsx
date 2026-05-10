@@ -226,8 +226,8 @@ export function CreditNotesPage() {
 
     return (
         <div className="mx-auto max-w-7xl space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                     <h1 className="text-2xl font-bold">Avoirs</h1>
                     <p className="text-muted-foreground">
                         {total} avoirs au total
@@ -237,7 +237,7 @@ export function CreditNotesPage() {
                     </p>
                 </div>
                 {permissions.canCreateCreditNote && (
-                    <Button onClick={handleOpenCreateDialog}>
+                    <Button className="w-full sm:w-auto" onClick={handleOpenCreateDialog}>
                         <Plus className="mr-2 h-4 w-4" />
                         Créer un avoir
                     </Button>
@@ -282,7 +282,7 @@ export function CreditNotesPage() {
 
             <Card>
                 <CardContent className="pt-6">
-                    <div className="flex flex-col gap-4 sm:flex-row">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
@@ -292,7 +292,7 @@ export function CreditNotesPage() {
                                 className="pl-9"
                             />
                         </div>
-                        <Button variant="outline" onClick={fetchCreditNotes}>
+                        <Button variant="outline" className="w-full sm:w-auto" onClick={fetchCreditNotes}>
                             <RefreshCw className="h-4 w-4" />
                         </Button>
                     </div>
@@ -396,11 +396,11 @@ export function CreditNotesPage() {
             </Card>
 
             {totalPages > 1 && (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm text-muted-foreground">
                         Page {page} sur {totalPages}
                     </p>
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-2 gap-2 sm:flex">
                         <Button
                             variant="outline"
                             size="sm"

@@ -392,8 +392,8 @@ export function InvoicesPage() {
     return (
         <div className="mx-auto max-w-7xl space-y-6">
             {/* En-tête */}
-            <div className="flex items-center justify-between">
-                <div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                     <h1 className="text-2xl font-bold">Factures</h1>
                     <p className="text-muted-foreground">
                         {total} factures au total
@@ -404,6 +404,7 @@ export function InvoicesPage() {
                         onClick={() => navigate('/invoices/new')}
                         disabled={isReadOnly}
                         title={isReadOnly ? 'Abonnement requis' : undefined}
+                        className="w-full sm:w-auto"
                     >
                         <Plus className="mr-2 h-4 w-4" />
                         Nouvelle facture
@@ -414,7 +415,7 @@ export function InvoicesPage() {
             {/* Onglets si Chorus Pro activé */}
             {chorusEnabled ? (
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList>
+                    <TabsList className="w-full sm:w-auto">
                         <TabsTrigger value="my-invoices">Mes factures</TabsTrigger>
                         <TabsTrigger value="received">Reçues (Chorus)</TabsTrigger>
                     </TabsList>
@@ -495,7 +496,7 @@ export function InvoicesPage() {
             {/* Filtres */}
             <Card>
                 <CardContent className="pt-6">
-                    <div className="flex flex-col gap-4 sm:flex-row">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
@@ -509,7 +510,7 @@ export function InvoicesPage() {
                             value={statusFilter}
                             onValueChange={(value) => setStatusFilter(value as InvoiceStatus | 'all')}
                         >
-                            <SelectTrigger className="w-[180px]">
+                            <SelectTrigger className="w-full sm:w-[180px]">
                                 <Filter className="mr-2 h-4 w-4" />
                                 <SelectValue placeholder="Statut" />
                             </SelectTrigger>
@@ -528,7 +529,7 @@ export function InvoicesPage() {
                                 ))}
                             </SelectContent>
                         </Select>
-                        <Button variant="outline" onClick={fetchInvoices}>
+                        <Button variant="outline" className="w-full sm:w-auto" onClick={fetchInvoices}>
                             <RefreshCw className="h-4 w-4" />
                         </Button>
                     </div>
@@ -688,11 +689,11 @@ export function InvoicesPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm text-muted-foreground">
                         Page {page} sur {totalPages}
                     </p>
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-2 gap-2 sm:flex">
                         <Button
                             variant="outline"
                             size="sm"
@@ -724,7 +725,7 @@ export function InvoicesPage() {
                 {/* Filtres reçues */}
                 <Card>
                     <CardContent className="pt-6">
-                        <div className="flex flex-col gap-4 sm:flex-row">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
                             <div className="space-y-1 flex-1">
                                 <label className="text-xs text-muted-foreground">Date début</label>
                                 <Input
@@ -747,7 +748,7 @@ export function InvoicesPage() {
                                     value={receivedStatusFilter}
                                     onValueChange={setReceivedStatusFilter}
                                 >
-                                    <SelectTrigger className="w-[200px]">
+                                    <SelectTrigger className="w-full sm:w-[200px]">
                                         <Filter className="mr-2 h-4 w-4" />
                                         <SelectValue placeholder="Statut" />
                                     </SelectTrigger>
