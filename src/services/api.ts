@@ -1358,6 +1358,15 @@ export const companyService = {
     return fetchWithAuth(`/companies/${id}/linked-clients`);
   },
 
+  async unlinkLinkedClient(
+    companyId: string,
+    clientId: string,
+  ): Promise<{ message: string }> {
+    return fetchWithAuth(`/companies/${companyId}/linked-clients/${clientId}`, {
+      method: "DELETE",
+    });
+  },
+
   async inviteNewMerchantAdmin(
     companyId: string,
     data: InviteNewMerchantAdminData,

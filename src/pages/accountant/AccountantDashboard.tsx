@@ -1,8 +1,18 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, Loader2, Plus, Search, Send } from 'lucide-react';
+import { Building2, Loader2, Plus, Search, Send, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
     Dialog,
     DialogContent,
@@ -50,6 +60,8 @@ export function AccountantDashboard() {
     const [inviteMerchantAdminEmail, setInviteMerchantAdminEmail] = useState('');
     const [invitingNewMerchant, setInvitingNewMerchant] = useState(false);
     const [cancellingMerchantSignupInvitationId, setCancellingMerchantSignupInvitationId] = useState<string | null>(null);
+    const [clientToUnlink, setClientToUnlink] = useState<LinkedClientWithStats | null>(null);
+    const [unlinkingClientId, setUnlinkingClientId] = useState<string | null>(null);
 
     const cabinetCompany = useMemo(() => {
         if (currentCompany && ['accountant', 'accountant_consultant'].includes(currentCompany.role)) {
@@ -68,6 +80,7 @@ export function AccountantDashboard() {
     }, [companies, currentCompany]);
 
     const canCreateMerchantLinkRequest = cabinetCompany?.role === 'accountant';
+    const canUnlinkLinkedClient = cabinetCompany?.role === 'accountant';
     const normalizedInviteMerchantAdminEmail = inviteMerchantAdminEmail.trim().toLowerCase();
     const isInviteMerchantAdminEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedInviteMerchantAdminEmail);
 
@@ -289,6 +302,33 @@ export function AccountantDashboard() {
         }
     };
 
+    const handleUnlinkLinkedClient = async () => {
+        if (!cabinetCompany || cabinetCompany.role !== 'accountant' || !clientToUnlink) {
+            return;
+        }
+
+        try {
+            setUnlinkingClientId(clientToUnlink.id);
+            await companyService.unlinkLinkedClient(cabinetCompany.id, clientToUnlink.id);
+            setClients((previous) =>
+                previous.filter((client) => client.id !== clientToUnlink.id),
+            );
+            toast({
+                title: 'Dossier supprimé',
+                description: 'Le client a été retiré du cabinet. Son entreprise et ses documents sont conservés.',
+            });
+            setClientToUnlink(null);
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Suppression impossible',
+                description: error.message || 'Le dossier client n’a pas pu être supprimé du cabinet.',
+            });
+        } finally {
+            setUnlinkingClientId(null);
+        }
+    };
+
     if (loading || companiesLoading) {
         return (
             <div className="space-y-6">
@@ -429,6 +469,11 @@ export function AccountantDashboard() {
                                     <TableHead className="text-right">CA annuel</TableHead>
                                     <TableHead className="text-right">En retard</TableHead>
                                     <TableHead className="text-right">Factures</TableHead>
+                                    {canUnlinkLinkedClient && (
+                                        <TableHead className="w-12">
+                                            <span className="sr-only">Actions</span>
+                                        </TableHead>
+                                    )}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -456,6 +501,29 @@ export function AccountantDashboard() {
                                         <TableCell className="text-right">
                                             {client.stats?.invoice_count || 0}
                                         </TableCell>
+                                        {canUnlinkLinkedClient && (
+                                            <TableCell className="text-right">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        setClientToUnlink(client);
+                                                    }}
+                                                    disabled={unlinkingClientId === client.id}
+                                                    title="Supprimer le dossier client"
+                                                    aria-label={`Supprimer le dossier client ${client.name}`}
+                                                >
+                                                    {unlinkingClientId === client.id ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <Trash2 className="h-4 w-4" />
+                                                    )}
+                                                </Button>
+                                            </TableCell>
+                                        )}
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -591,6 +659,44 @@ export function AccountantDashboard() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog
+                open={Boolean(clientToUnlink)}
+                onOpenChange={(open) => {
+                    if (!open && !unlinkingClientId) {
+                        setClientToUnlink(null);
+                    }
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Supprimer ce dossier client ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {clientToUnlink?.name} sera retiré de vos dossiers clients.
+                            L’entreprise commerçante, ses factures et ses documents seront conservés.
+                            Vous pourrez renvoyer une demande de liaison plus tard si nécessaire.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={Boolean(unlinkingClientId)}>
+                            Annuler
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={(event) => {
+                                event.preventDefault();
+                                void handleUnlinkLinkedClient();
+                            }}
+                            disabled={Boolean(unlinkingClientId)}
+                        >
+                            {unlinkingClientId ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : null}
+                            Supprimer le dossier
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

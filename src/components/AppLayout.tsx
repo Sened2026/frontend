@@ -14,12 +14,20 @@ import {
     LayoutDashboard,
     Briefcase,
     AlertTriangle,
+    Bell,
     Building2,
+    Check,
     Crown,
     RefreshCw,
+    X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -33,7 +41,11 @@ import { useOperationalCompany } from "@/hooks/useOperationalCompany";
 import { usePermissions } from "@/hooks/usePermissions";
 import { WebSocketProvider } from "@/context/WebSocketContext";
 import { useSubscription } from "@/context/SubscriptionContext";
-import { subscriptionService } from "@/services/api";
+import {
+    companyService,
+    subscriptionService,
+    type AccountantLinkRequest,
+} from "@/services/api";
 import { cn } from "@/lib/utils";
 
 function shouldShowSubscriptionBanner(pathname: string, isReadOnly: boolean): boolean {
@@ -155,6 +167,39 @@ function CompanySelectorHeader() {
     );
 }
 
+function getHiddenAccountantRequestIds(userId: string, companyId: string): string[] {
+    if (typeof window === "undefined") {
+        return [];
+    }
+
+    try {
+        const raw = window.localStorage.getItem(
+            `sened:hidden-accountant-link-requests:${userId}:${companyId}`,
+        );
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed)
+            ? parsed.filter((value): value is string => typeof value === "string")
+            : [];
+    } catch {
+        return [];
+    }
+}
+
+function setHiddenAccountantRequestIds(
+    userId: string,
+    companyId: string,
+    requestIds: string[],
+) {
+    if (typeof window === "undefined") {
+        return;
+    }
+
+    window.localStorage.setItem(
+        `sened:hidden-accountant-link-requests:${userId}:${companyId}`,
+        JSON.stringify(Array.from(new Set(requestIds))),
+    );
+}
+
 /**
  * Layout principal de l'application avec sidebar persistante
  */
@@ -168,6 +213,7 @@ function AppLayoutContent() {
         companies,
         currentCompany,
         setCurrentCompany,
+        refreshCompanies,
         loading: companiesLoading,
         hasResolved: companiesResolved,
         loadError: companiesLoadError,
@@ -187,6 +233,10 @@ function AppLayoutContent() {
     } =
         useSubscription();
     const [isRefreshingSubscription, setIsRefreshingSubscription] = useState(false);
+    const [incomingAccountantRequests, setIncomingAccountantRequests] = useState<AccountantLinkRequest[]>([]);
+    const [hiddenAccountantRequestIds, setHiddenAccountantRequestIdsState] = useState<string[]>([]);
+    const [accountantNotificationsLoading, setAccountantNotificationsLoading] = useState(false);
+    const [processingAccountantRequestId, setProcessingAccountantRequestId] = useState<string | null>(null);
     const hasAnyCompany = companies.length > 0;
     const subscriptionCompanyName =
         operationalCompany?.name || currentCompany?.name || "cette entreprise";
@@ -196,6 +246,95 @@ function AppLayoutContent() {
         !companiesLoading &&
         !subscriptionLoading &&
         shouldShowSubscriptionBanner(location.pathname, isReadOnly);
+    const visibleAccountantRequests = incomingAccountantRequests.filter(
+        (request) => !hiddenAccountantRequestIds.includes(request.id),
+    );
+    const shouldShowAccountantNotifications =
+        currentCompany?.role === "merchant_admin" && Boolean(user?.id);
+
+    const loadIncomingAccountantNotifications = async () => {
+        if (!currentCompany || currentCompany.role !== "merchant_admin") {
+            setIncomingAccountantRequests([]);
+            return;
+        }
+
+        try {
+            setAccountantNotificationsLoading(true);
+            const requests = await companyService.getAccountantLinkRequests(
+                currentCompany.id,
+                "incoming",
+            );
+            setIncomingAccountantRequests(requests);
+        } catch (error) {
+            console.error("Erreur de chargement des notifications comptables:", error);
+            setIncomingAccountantRequests([]);
+        } finally {
+            setAccountantNotificationsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!user?.id || !currentCompany?.id || currentCompany.role !== "merchant_admin") {
+            setIncomingAccountantRequests([]);
+            setHiddenAccountantRequestIdsState([]);
+            return;
+        }
+
+        setHiddenAccountantRequestIdsState(
+            getHiddenAccountantRequestIds(user.id, currentCompany.id),
+        );
+        void loadIncomingAccountantNotifications();
+    }, [currentCompany?.id, currentCompany?.role, user?.id]);
+
+    const hideAccountantRequest = (requestId: string) => {
+        if (!user?.id || !currentCompany?.id) {
+            return;
+        }
+
+        const nextHiddenIds = [...hiddenAccountantRequestIds, requestId];
+        setHiddenAccountantRequestIdsState(Array.from(new Set(nextHiddenIds)));
+        setHiddenAccountantRequestIds(user.id, currentCompany.id, nextHiddenIds);
+    };
+
+    const handleRespondToAccountantNotification = async (
+        requestId: string,
+        decision: "accept" | "reject",
+    ) => {
+        if (!currentCompany || currentCompany.role !== "merchant_admin") {
+            return;
+        }
+
+        try {
+            setProcessingAccountantRequestId(requestId);
+            if (decision === "accept") {
+                await companyService.acceptAccountantLinkRequest(currentCompany.id, requestId);
+                toast({
+                    title: "Invitation acceptée",
+                    description: "Le cabinet comptable est maintenant lié à votre entreprise.",
+                });
+                await refreshCompanies();
+            } else {
+                await companyService.rejectAccountantLinkRequest(currentCompany.id, requestId);
+                toast({
+                    title: "Invitation refusée",
+                    description: "La demande de liaison comptable a été refusée.",
+                });
+            }
+
+            setIncomingAccountantRequests((previous) =>
+                previous.filter((request) => request.id !== requestId),
+            );
+        } catch (error: any) {
+            toast({
+                variant: "destructive",
+                title: "Action impossible",
+                description:
+                    error.message || "La demande de liaison comptable n’a pas pu être traitée.",
+            });
+        } finally {
+            setProcessingAccountantRequestId(null);
+        }
+    };
 
     const handleRefreshSubscription = async () => {
         try {
@@ -549,13 +688,125 @@ function AppLayoutContent() {
 
                     <div className="hidden lg:block" />
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4">
                         {/* Sélecteur entreprise */}
                         {hasAnyCompany && (
                             <>
                                 <CompanySelectorHeader />
                                 <div className="h-8 w-px bg-border" />
                             </>
+                        )}
+
+                        {shouldShowAccountantNotifications && (
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="relative h-8 w-8 text-muted-foreground hover:text-foreground"
+                                        title="Notifications"
+                                        aria-label="Notifications"
+                                        onClick={() => {
+                                            void loadIncomingAccountantNotifications();
+                                        }}
+                                    >
+                                        <Bell className="h-4 w-4" />
+                                        {visibleAccountantRequests.length > 0 && (
+                                            <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-card" />
+                                        )}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                    align="end"
+                                    className="w-[calc(100vw-2rem)] max-w-sm p-0"
+                                >
+                                    <div className="border-b px-4 py-3">
+                                        <p className="text-sm font-medium">Notifications</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Demandes de liaison comptable
+                                        </p>
+                                    </div>
+                                    <div className="max-h-[70vh] overflow-y-auto p-3">
+                                        {accountantNotificationsLoading ? (
+                                            <div className="flex items-center gap-2 rounded-md border p-3 text-sm text-muted-foreground">
+                                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                                Chargement...
+                                            </div>
+                                        ) : visibleAccountantRequests.length === 0 ? (
+                                            <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                                                Aucune notification.
+                                            </p>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {visibleAccountantRequests.map((request) => (
+                                                    <div
+                                                        key={request.id}
+                                                        className="rounded-md border p-3"
+                                                    >
+                                                        <div className="space-y-1">
+                                                            <p className="text-sm font-medium">
+                                                                {request.accountant_company.name}
+                                                            </p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                Souhaite lier votre entreprise à son cabinet.
+                                                            </p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                Envoyée le{" "}
+                                                                {new Date(request.created_at).toLocaleDateString("fr-FR")}
+                                                            </p>
+                                                        </div>
+                                                        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => hideAccountantRequest(request.id)}
+                                                                disabled={processingAccountantRequestId === request.id}
+                                                            >
+                                                                <X className="mr-2 h-4 w-4" />
+                                                                Masquer
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    void handleRespondToAccountantNotification(
+                                                                        request.id,
+                                                                        "reject",
+                                                                    )
+                                                                }
+                                                                disabled={processingAccountantRequestId === request.id}
+                                                            >
+                                                                Refuser
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    void handleRespondToAccountantNotification(
+                                                                        request.id,
+                                                                        "accept",
+                                                                    )
+                                                                }
+                                                                disabled={processingAccountantRequestId === request.id}
+                                                            >
+                                                                {processingAccountantRequestId === request.id ? (
+                                                                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                                                ) : (
+                                                                    <Check className="mr-2 h-4 w-4" />
+                                                                )}
+                                                                Accepter
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
                         )}
 
                         {/* User info + logout */}
